@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-paper: #FFF8F0;
+    --color-cream: #FFFCF8;
+    --color-blush: #F7DDE1;
+    --color-rose: #D8A0A5;
+    --color-mauve: #B98289;
+    --color-sage: #B7B99A;
+    --color-olive: #666747;
+    --color-ink: #44352F;
+    --color-beige: #E9D9C9;
+  }
+
+  body {
+    background-color: #FFF8F0;
+    color: #44352F;
+    font-family: 'Lora', Georgia, serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Typography Classes */
+.font-handwriting {
+  font-family: 'Great Vibes', cursive;
+}
+
+.font-note {
+  font-family: 'Caveat', cursive;
+}
+
+.font-editorial {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-body {
+  font-family: 'Lora', Georgia, serif;
+}
+
+.font-sans-clean {
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Paper and vintage textures */
+.paper-texture {
+  background-color: #FFF8F0;
+  background-image: radial-gradient(#E9D9C9 0.75px, transparent 0.75px), radial-gradient(#F7DDE1 0.75px, #FFF8F0 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.card-paper {
+  background-color: #FFFCF8;
+  border: 1px solid rgba(233, 217, 201, 0.7);
+  box-shadow: 0 3px 14px rgba(68, 53, 47, 0.05), 0 1px 3px rgba(68, 53, 47, 0.03);
+}
+
+.ruled-lines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    rgba(216, 160, 165, 0.25) 31px,
+    rgba(216, 160, 165, 0.25) 32px
+  );
+  line-height: 32px;
+}
+
+/* Decorative Washi Tape effects */
+.washi-tape {
+  position: relative;
+}
+
+.washi-tape::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 90px;
+  height: 22px;
+  background-color: rgba(247, 221, 225, 0.85);
+  border-left: 2px dashed rgba(185, 130, 137, 0.3);
+  border-right: 2px dashed rgba(185, 130, 137, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.washi-tape-sage::before {
+  background-color: rgba(183, 185, 154, 0.75);
+  border-left-color: rgba(102, 103, 71, 0.3);
+  border-right-color: rgba(102, 103, 71, 0.3);
+}
+
+.washi-tape-corner {
+  position: relative;
+}
+
+.washi-tape-corner::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 60px;
+  height: 20px;
+  transform: rotate(45deg);
+  background-color: rgba(247, 221, 225, 0.8);
+  border-left: 1px dashed rgba(216, 160, 165, 0.4);
+  border-right: 1px dashed rgba(216, 160, 165, 0.4);
+  box-shadow: 0 1px 2px rgba(68, 53, 47, 0.06);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Postage stamp edge effect */
+.postage-stamp {
+  border: 4px solid #FFF8F0;
+  outline: 1px dashed #D8A0A5;
+  outline-offset: -2px;
+  box-shadow: 0 2px 6px rgba(68, 53, 47, 0.08);
+}
+
+/* Polaroid style frame */
+.polaroid-frame {
+  background: #FFFFFF;
+  padding: 10px 10px 24px 10px;
+  box-shadow: 0 4px 12px rgba(68, 53, 47, 0.08), 0 1px 3px rgba(68, 53, 47, 0.05);
+  border: 1px solid #E9D9C9;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF8F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #E9D9C9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D8A0A5;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounceSoft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.45s ease-out both;
+}
+
+.animate-bounce-subtle {
+  animation: bounceSoft 2s ease-in-out infinite;
+}
+
+.animate-slideIn {
+  animation: slideInRight 0.35s ease-out both;
+}
+
+/* Smooth page transitions */
+[class*="View"],
+[class*="Section"] {
+  will-change: opacity;
+}
+
+/* Accessibility – visible focus rings */
+:focus-visible {
+  outline: 2px solid #B98289;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hide scrollbar for filter rows but keep scrollable */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prose-like readable body spacing */
+.prose p {
+  margin-bottom: 1em;
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Line-clamp utilities (Tailwind v4 already ships these, but just in case) */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
