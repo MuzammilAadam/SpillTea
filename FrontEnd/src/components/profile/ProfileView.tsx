@@ -22,12 +22,14 @@ import {
   PaperClip,
   WaxSeal,
 } from '../common/Botanicals';
+import { EditableMoodboard } from './EditableMoodboard';
 
 interface ProfileViewProps {
   user: UserProfile;
   stories: Story[];
   onUpdateProfile: (updated: Partial<UserProfile>) => void;
   onReadStory: (story: Story) => void;
+  onToast?: (msg: string) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -35,6 +37,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   stories,
   onUpdateProfile,
   onReadStory,
+  onToast = () => {},
 }) => {
   const [activeTab, setActiveTab] = useState<'moodboard' | 'stories' | 'collections' | 'about'>('moodboard');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -228,105 +231,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* TAB 1: PINTEREST-INSPIRED SCRAPBOOK MOODBOARD (REFERENCE B) */}
       {activeTab === 'moodboard' && (
-        <div className="space-y-8">
-          <div className="text-center mb-6">
-            <span className="font-note text-lg text-[#B98289]">
-              polaroids, pressed flowers, and quiet reminders
-            </span>
-          </div>
-
-          {/* Masonry-style Collage Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
-            {/* 1. Note to self */}
-            <div className="relative bg-[#FFF8F0] p-6 rounded-2xl border border-dashed border-[#B98289]/60 shadow-md transform -rotate-1 hover:rotate-0 transition-transform">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <PaperClip className="w-6 h-8 text-[#B98289]" />
-              </div>
-              <span className="text-[10px] font-sans-clean font-bold uppercase tracking-wider text-[#B98289]">
-                handwritten note to self
-              </span>
-              <p className="font-note text-2xl text-[#44352F] mt-3 leading-relaxed">
-                “Be gentle with yourself. You are shedding old skin, and blooming is slow, sacred work. Breathe through the quiet days.”
-              </p>
-              <div className="text-right mt-3 text-xs font-serif text-[#666747]">
-                ~ Eleanor
-              </div>
-            </div>
-
-            {/* 2. Polaroid 1: Botanicals */}
-            <div className="polaroid-frame transform rotate-2 hover:rotate-0 transition-transform duration-300">
-              <div className="h-64 overflow-hidden rounded-xs bg-gray-100">
-                <img
-                  src="https://images.unsplash.com/photo-1507290439931-a861b5a38200?auto=format&fit=crop&w=600&q=80"
-                  alt="Pressed cosmos"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="pt-3 text-center">
-                <p className="font-note text-xl text-[#44352F]">October Wildflowers</p>
-                <p className="font-serif text-xs text-[#666747]">pressed between pages of my favorite book</p>
-              </div>
-            </div>
-
-            {/* 3. Favorite Quote Card */}
-            <div className="bg-[#F7DDE1]/60 p-6 rounded-2xl border border-[#D8A0A5] shadow-md transform rotate-1 hover:rotate-0 transition-transform">
-              <WashiTapeStrip color="#B7B99A" width="w-20" rotation="-rotate-3" className="mb-2" />
-              <p className="font-editorial italic text-xl text-[#44352F] leading-snug">
-                “Softness is not weakness. It takes courage to stay delicate in a world that urges you to be callous.”
-              </p>
-              <span className="block mt-4 text-xs font-serif text-[#666747]">
-                — Antoine de Saint-Exupéry
-              </span>
-            </div>
-
-            {/* 4. Polaroid 2: Books & Rain */}
-            <div className="polaroid-frame transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-              <div className="h-64 overflow-hidden rounded-xs bg-gray-100">
-                <img
-                  src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80"
-                  alt="Books and rain"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="pt-3 text-center">
-                <p className="font-note text-xl text-[#44352F]">Rainy Sunday Shelves</p>
-                <p className="font-serif text-xs text-[#666747]">worn paper and tea</p>
-              </div>
-            </div>
-
-            {/* 5. Currently feeling card */}
-            <div className="bg-[#FFFCF8] p-6 rounded-2xl border border-[#E9D9C9] shadow-md transform rotate-2 hover:rotate-0 transition-transform">
-              <div className="flex items-center gap-2 mb-2">
-                <TeacupIcon className="w-4 h-4 text-[#B98289]" />
-                <span className="font-serif text-xs font-semibold uppercase tracking-wider text-[#666747]">
-                  Tea Ritual
-                </span>
-              </div>
-              <p className="font-body text-sm text-[#44352F] leading-relaxed">
-                Drinking peppermint tea with dried chamomile leaves. Reminding myself that silence is not an empty room, but a full one.
-              </p>
-              <div className="mt-4 flex items-center justify-between pt-2 border-t border-[#E9D9C9] text-xs font-note text-[#B98289]">
-                <span>Evening sanctuary</span>
-                <span>8:45 PM</span>
-              </div>
-            </div>
-
-            {/* 6. Polaroid 3: Tea Porcelain */}
-            <div className="polaroid-frame transform rotate-1 hover:rotate-0 transition-transform duration-300">
-              <div className="h-64 overflow-hidden rounded-xs bg-gray-100">
-                <img
-                  src="https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80"
-                  alt="Tea porcelain"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="pt-3 text-center">
-                <p className="font-note text-xl text-[#44352F]">Quiet Porcelain</p>
-                <p className="font-serif text-xs text-[#666747]">taking ten minutes to breathe</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EditableMoodboard
+          initialCards={user.moodboard}
+          pseudonym={user.pseudonym}
+          isOwner={true}
+          onToast={onToast}
+        />
       )}
 
       {/* TAB 2: MY STORIES */}

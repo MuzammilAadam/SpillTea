@@ -9,6 +9,9 @@ interface AnnouncementHeaderProps {
   onNavigate: (view: string) => void;
   currentUser: UserProfile;
   onOpenSearch: () => void;
+  onOpenAuth?: () => void;
+  isAuthenticated?: boolean;
+  onLogout?: () => void;
 }
 
 export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
@@ -18,6 +21,9 @@ export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
   onNavigate,
   currentUser,
   onOpenSearch,
+  onOpenAuth,
+  isAuthenticated = false,
+  onLogout,
 }) => {
   return (
     <div className="w-full bg-[#F7DDE1]/60 border-b border-[#E9D9C9] px-4 py-2 text-xs text-[#44352F]">
@@ -66,19 +72,40 @@ export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
             )}
           </button>
 
-          <button
-            onClick={() => onNavigate('profile')}
-            className="flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer border border-transparent hover:border-[#E9D9C9]"
-          >
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.pseudonym}
-              className="w-5 h-5 rounded-full object-cover border border-[#D8A0A5]"
-            />
-            <span className="text-[11px] font-medium text-[#44352F] hidden lg:inline">
-              @{currentUser.pseudonym}
-            </span>
-          </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onNavigate('profile')}
+                className="flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer border border-transparent hover:border-[#E9D9C9]"
+                title="Go to my profile & moodboard"
+              >
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.pseudonym}
+                  className="w-5 h-5 rounded-full object-cover border border-[#D8A0A5]"
+                />
+                <span className="text-[11px] font-medium text-[#44352F] hidden lg:inline">
+                  @{currentUser.pseudonym}
+                </span>
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="text-[10px] text-[#A84855] hover:underline px-1.5 py-0.5 cursor-pointer"
+                  title="Sign out of journal"
+                >
+                  Exit
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#B98289] text-white hover:bg-[#A66D74] transition-all text-[11px] font-serif font-medium cursor-pointer shadow-2xs"
+            >
+              <span>Sign In / Pen Name</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
