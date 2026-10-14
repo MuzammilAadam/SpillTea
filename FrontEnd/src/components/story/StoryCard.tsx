@@ -9,6 +9,7 @@ interface StoryCardProps {
   onToggleSave: (storyId: string) => void;
   onReaction: (storyId: string, reactionType: 'hearYou' | 'feltThisToo' | 'thankYou' | 'sendingSupport') => void;
   featured?: boolean;
+  onOpenProfile?: (pseudonym: string) => void;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -17,6 +18,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   onToggleSave,
   onReaction,
   featured = false,
+  onOpenProfile,
 }) => {
   const [showWarningContent, setShowWarningContent] = useState(false);
 
@@ -51,14 +53,10 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       {/* Header Info */}
       <div className="flex items-center justify-between gap-3 mb-3 pt-2">
         <div className="flex items-center gap-2.5">
-          <img
-            src={story.authorAvatar}
-            alt={story.authorPseudonym}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#D8A0A5]"
-          />
+          <button onClick={() => onOpenProfile?.(story.authorPseudonym)}><img src={story.authorAvatar || '/favicon.svg'} alt={story.authorPseudonym} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#D8A0A5]" /></button>
           <div>
             <div className="text-xs font-serif font-semibold text-[#44352F] flex items-center gap-1.5">
-              <span>{story.authorPseudonym}</span>
+              <button onClick={() => onOpenProfile?.(story.authorPseudonym)} className="hover:text-[#B98289]">{story.authorPseudonym}</button>
               <span className="text-[#B98289] font-normal text-[11px]">•</span>
               <span className="text-[11px] font-sans-clean font-normal text-[#666747]">
                 {story.date}

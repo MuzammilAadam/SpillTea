@@ -1,19 +1,32 @@
 import { api } from './client';
-import { UserProfile } from '../types';
+import { KindredPage, KindredProfile, PeopleSearchResult, UserProfile } from '../types';
+import { PageResult } from './stories';
 
 export const profileApi = {
   getProfile: (pseudonym: string) =>
     api.get<UserProfile>(`/profiles/${pseudonym}`),
 
+  searchPeople: (query: string, page = 0, size = 20) =>
+    api.get<PageResult<PeopleSearchResult>>(`/profiles/search?q=${encodeURIComponent(query.trim())}&page=${page}&size=${size}`),
+
   getMyProfile: () =>
     api.get<UserProfile>('/me/profile'),
 
+  getStats: (userId: string) =>
+    api.get<{ storiesCount: number; kindredCount: number; myKindredCount: number }>(`/profiles/${userId}/stats`),
+
+  follow: (userId: string) => api.put<{ storiesCount: number; kindredCount: number; myKindredCount: number }>(`/profiles/${userId}/follow`),
+  unfollow: (userId: string) => api.delete<{ storiesCount: number; kindredCount: number; myKindredCount: number }>(`/profiles/${userId}/follow`),
+  relationship: (userId: string) => api.get<{ following: boolean; mutualKindred: boolean }>(`/profiles/${userId}/relationship`),
+  getKindred: (userId: string, page = 0, size = 20) => api.get<KindredPage>(`/profiles/${userId}/kindred?page=${page}&size=${size}`),
+  getMyKindred: (userId: string, page = 0, size = 20) => api.get<KindredPage>(`/profiles/${userId}/my-kindred?page=${page}&size=${size}`),
+
   updateProfile: (profile: Partial<UserProfile>) =>
-    api.put<UserProfile>('/me/profile', profile),
+    api.patch<UserProfile>('/me/profile', profile),
 
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post<string>('/me/avatar', formData);
+    return api.post<{ avatar: string }>('/me/profile/photo', formData);
   },
 };

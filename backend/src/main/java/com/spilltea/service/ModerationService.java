@@ -32,17 +32,19 @@ public class ModerationService {
     private final UserRepository userRepository;
     private final StoryRepository storyRepository;
     private final CommentRepository commentRepository;
+    private final KindredService kindredService;
 
     public ModerationService(ReportRepository reportRepository,
                              BlockedUserRepository blockedUserRepository,
                              UserRepository userRepository,
                              StoryRepository storyRepository,
-                             CommentRepository commentRepository) {
+                             CommentRepository commentRepository, KindredService kindredService) {
         this.reportRepository = reportRepository;
         this.blockedUserRepository = blockedUserRepository;
         this.userRepository = userRepository;
         this.storyRepository = storyRepository;
         this.commentRepository = commentRepository;
+        this.kindredService = kindredService;
     }
 
     @Transactional
@@ -93,6 +95,7 @@ public class ModerationService {
                     .orElseThrow(() -> new ResourceNotFoundException("User to block not found"));
 
             blockedUserRepository.save(new BlockedUser(blocker, blocked));
+            kindredService.removeConnectionForBlock(blockerId, blockedId);
         }
     }
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { UserProfile, Story } from '../../types';
+import React, { useEffect, useState } from 'react';
+import { KindredProfile, UserProfile, Story } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import {
   Edit3,
@@ -24,11 +24,13 @@ import {
   WaxSeal,
 } from '../common/Botanicals';
 import { EditableMoodboard } from './EditableMoodboard';
+import { profileApi } from '../../api/profile';
 
 interface ProfileViewProps {
   user: UserProfile;
   stories: Story[];
-  onUpdateProfile: (updated: Partial<UserProfile>) => void;
+  onUpdateProfile: (updated: Partial<UserProfile>) => Promise<void> | void;
+  onOpenProfile?: (pseudonym: string) => void;
   onReadStory: (story: Story) => void;
   onToast?: (msg: string) => void;
   onRequireAuth?: (action: () => void, message?: string) => boolean;
@@ -38,6 +40,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   stories,
   onUpdateProfile,
+  onOpenProfile,
   onReadStory,
   onToast = () => {},
   onRequireAuth,
@@ -46,6 +49,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const isOwner = isAuthenticated && (!currentUser?.pseudonym || currentUser?.pseudonym === user.pseudonym);
   const [activeTab, setActiveTab] = useState<'moodboard' | 'stories' | 'collections' | 'about'>('moodboard');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [kindredStats, setKindredStats] = useState(user.kindredStats);
+  const [relationship, setRelationship] = useState({ following: false, mutualKindred: false });
+  const [relationshipBusy, setRelationshipBusy] = useState(false);
+  const [confirmUnfollow, setConfirmUnfollow] = useState(false);
+  const [listType, setListType] = useState<'kindred' | 'my-kindred' | null>(null);
+  const [kindredList, setKindredList] = useState<KindredProfile[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const [listSearch, setListSearch] = useState('');
+  const [listPage, setListPage] = useState(0);
+  const [listHasMore, setListHasMore] = useState(false);
 
   // Edit form state
   const [editName, setEditName] = useState(user.displayName);
@@ -54,31 +68,81 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [editFeeling, setEditFeeling] = useState(user.currentlyFeeling);
   const [editAvatar, setEditAvatar] = useState(user.avatar);
   const [editAccent, setEditAccent] = useState(user.themeAccent);
-
-  const avatarPresets = [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80',
-  ];
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const themePresets = ['#D8A0A5', '#B98289', '#B7B99A', '#666747', '#E9D9C9'];
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdateProfile({
-      displayName: editName,
-      pseudonym: editPseudonym,
-      bio: editBio,
-      currentlyFeeling: editFeeling,
-      avatar: editAvatar,
-      themeAccent: editAccent,
-    });
-    setIsEditModalOpen(false);
+  useEffect(() => {
+    setEditName(user.displayName); setEditPseudonym(user.pseudonym); setEditBio(user.bio || '');
+    setEditFeeling(user.currentlyFeeling || ''); setEditAvatar(user.avatar || ''); setEditAccent(user.themeAccent || '#D8A0A5');
+    setKindredStats(undefined);
+    profileApi.getStats(user.id).then(setKindredStats).catch(() => setKindredStats(undefined));
+    if (!isOwner && isAuthenticated) {
+      profileApi.relationship(user.id).then(setRelationship).catch(() => setRelationship({ following: false, mutualKindred: false }));
+    }
+  }, [user.id, isOwner, isAuthenticated]);
+
+  const openKindredList = async (type: 'kindred' | 'my-kindred') => {
+    setListType(type); setListSearch(''); setListPage(0); setListLoading(true); setListError(null);
+    try {
+      const page = type === 'kindred' ? await profileApi.getKindred(user.id) : await profileApi.getMyKindred(user.id);
+      setKindredList(page.content); setListHasMore(!page.last);
+    } catch { setListError('This little list could not be opened just now.'); }
+    finally { setListLoading(false); }
   };
 
-  const userStories = stories.filter((s) => s.isAuthor || s.authorPseudonym === user.pseudonym);
+  const loadMoreKindred = async () => {
+    if (!listType || !listHasMore) return;
+    setListLoading(true);
+    try {
+      const nextPage = listPage + 1;
+      const page = listType === 'kindred' ? await profileApi.getKindred(user.id, nextPage) : await profileApi.getMyKindred(user.id, nextPage);
+      setKindredList((current) => [...current, ...page.content]); setListPage(nextPage); setListHasMore(!page.last);
+    } catch { setListError('More Kindred could not be gathered just now.'); }
+    finally { setListLoading(false); }
+  };
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) { onToast('Sign in to find your way to this little corner.'); return; }
+    setRelationshipBusy(true);
+    try {
+      const next = relationship.following ? await profileApi.unfollow(user.id) : await profileApi.follow(user.id);
+      setKindredStats(next);
+      setRelationship({ following: !relationship.following, mutualKindred: relationship.mutualKindred });
+      const refreshed = await profileApi.getMyProfile();
+      await onUpdateProfile({ displayName: refreshed.displayName, pseudonym: refreshed.pseudonym, bio: refreshed.bio, currentlyFeeling: refreshed.currentlyFeeling, avatar: refreshed.avatar, themeAccent: refreshed.themeAccent });
+      onToast(relationship.following ? 'You gently stepped away from this corner.' : 'You found your way to this little corner.');
+    } catch (error: any) { onToast(error?.message || 'This connection could not be changed just now.'); }
+    finally { setRelationshipBusy(false); }
+  };
+
+  const handlePhotoChange = (file?: File) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      onToast('Please choose a JPEG, PNG, or WebP image up to 5 MB.');
+      return;
+    }
+    setSelectedPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim() || !editPseudonym.trim()) { onToast('Display name and pen name are required.'); return; }
+    setSavingProfile(true);
+    try {
+      let avatar = editAvatar;
+      if (selectedPhoto) avatar = (await profileApi.uploadAvatar(selectedPhoto)).avatar;
+      await onUpdateProfile({ displayName: editName.trim(), pseudonym: editPseudonym.trim(), bio: editBio.trim(), currentlyFeeling: editFeeling.trim(), avatar, themeAccent: editAccent });
+      setSelectedPhoto(null); setPhotoPreview(null); setIsEditModalOpen(false);
+      onToast('Your scrapbook profile has been saved.');
+    } catch (error: any) { onToast(error?.message || 'Your changes could not be saved just now.'); }
+    finally { setSavingProfile(false); }
+  };
+
+  const userStories = (user.stories && user.stories.length > 0 ? user.stories : stories.filter((s) => s.isAuthor || s.authorPseudonym === user.pseudonym));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fadeIn">
@@ -105,7 +169,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="polaroid-frame transform -rotate-2 hover:rotate-0 transition-transform duration-300 w-48 sm:w-56 shrink-0 relative">
             <div className="w-full h-44 sm:h-52 overflow-hidden bg-gray-100 rounded-sm">
               <img
-                src={user.avatar}
+                src={user.avatar || '/favicon.svg'}
                 alt={user.displayName}
                 className="w-full h-full object-cover"
               />
@@ -153,21 +217,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </span>
             </div>
 
+            {!isOwner && (
+              <>
+                <button onClick={() => relationship.following ? setConfirmUnfollow((open) => !open) : handleFollow()} disabled={relationshipBusy} className={`px-4 py-2 rounded-full font-serif text-sm ${relationship.following ? 'bg-[#B7B99A]' : 'bg-[#B98289] text-white'} disabled:opacity-60`}>
+                  {relationship.following ? 'Following' : 'Follow'}
+                </button>
+                {confirmUnfollow && <div className="absolute mt-12 z-20 p-3 rounded-xl bg-[#FFFCF8] border border-[#E9D9C9] shadow-lg text-xs font-serif"><p className="mb-2">Step away from this corner?</p><button onClick={() => { setConfirmUnfollow(false); handleFollow(); }} className="text-[#B98289] font-semibold">Unfollow</button></div>}
+              </>
+            )}
+
             {/* Stats row & Edit button */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-3 border-t border-[#E9D9C9]/80 text-xs">
               <div className="flex items-center gap-1 font-serif text-[#44352F]">
-                <strong>{user.stats.storiesShared}</strong>
-                <span className="text-[#666747]">stories shared</span>
+                <strong>{kindredStats ? kindredStats.storiesCount : '—'}</strong>
+                <span className="text-[#666747]">Stories</span>
               </div>
               <span className="text-[#D8A0A5]">•</span>
               <div className="flex items-center gap-1 font-serif text-[#44352F]">
-                <strong>{user.stats.lettersPenciled}</strong>
-                <span className="text-[#666747]">letters penciled</span>
+                <strong>{kindredStats ? kindredStats.kindredCount : '—'}</strong>
+                <button onClick={() => openKindredList('kindred')} className="text-[#666747] hover:text-[#B98289]">Kindred</button>
               </div>
               <span className="text-[#D8A0A5]">•</span>
               <div className="flex items-center gap-1 font-serif text-[#44352F]">
-                <strong>{user.stats.momentsEmpathized}</strong>
-                <span className="text-[#666747]">whispers received</span>
+                <strong>{kindredStats ? kindredStats.myKindredCount : '—'}</strong>
+                <button onClick={() => openKindredList('my-kindred')} className="text-[#666747] hover:text-[#B98289]">My Kindred</button>
               </div>
 
               {isOwner && (
@@ -336,6 +409,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
+      {listType && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40" onClick={() => setListType(null)}>
+          <div className="w-full max-w-xl max-h-[80vh] overflow-auto bg-[#FFFCF8] rounded-3xl border border-[#E9D9C9] p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-editorial font-bold text-2xl text-[#44352F]">{listType === 'kindred' ? 'Kindred' : 'My Kindred'}</h3>
+              <button onClick={() => setListType(null)} className="text-[#666747]">×</button>
+            </div>
+            <input value={listSearch} onChange={(event) => setListSearch(event.target.value)} placeholder="Search this little circle" className="w-full p-2.5 mb-4 rounded-xl border border-[#E9D9C9] bg-white" />
+            {listLoading && <p className="py-8 text-center font-serif text-[#666747]">Gathering the little circle…</p>}
+            {listError && <p className="py-8 text-center font-serif text-[#B98289]">{listError}</p>}
+            {!listLoading && !listError && kindredList.filter((item) => `${item.pseudonym} ${item.displayName}`.toLowerCase().includes(listSearch.toLowerCase())).map((item) => (
+                <div key={item.id} className="flex items-center gap-3 py-3 border-b border-[#E9D9C9]">
+                <button onClick={() => onOpenProfile?.(item.pseudonym)}><img src={item.avatar || '/favicon.svg'} alt="" className="w-11 h-11 rounded-full object-cover bg-[#F7DDE1]" /></button>
+                <button onClick={() => onOpenProfile?.(item.pseudonym)} className="flex-1 text-left"><p className="font-serif font-semibold">@{item.pseudonym}</p><p className="text-xs text-[#666747] line-clamp-1">{item.bio || 'A quiet soul in the sanctuary.'}</p></button>
+                {item.mutualKindred && <span className="text-xs text-[#B98289]">Mutual Kindred</span>}
+              </div>
+            ))}
+            {!listLoading && !listError && kindredList.length === 0 && <p className="py-8 text-center font-serif text-[#666747]">{listType === 'kindred' ? 'No one has found their way to this little corner yet.' : 'Your little circle is waiting to grow.'}</p>}
+            {!listLoading && !listError && listHasMore && <button onClick={loadMoreKindred} className="w-full mt-4 py-2 rounded-xl border border-[#E9D9C9] text-[#B98289] font-serif hover:bg-[#F7DDE1]">Load more</button>}
+          </div>
+        </div>
+      )}
+
       {/* Interactive Edit Profile Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
@@ -393,22 +489,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 />
               </div>
 
-              {/* Avatar Preset Selector */}
+              {/* Gallery photo selector */}
               <div>
-                <label className="block font-semibold text-[#44352F] mb-2">Polaroid Portrait Preset</label>
-                <div className="flex gap-3">
-                  {avatarPresets.map((imgUrl, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setEditAvatar(imgUrl)}
-                      className={`relative w-11 h-11 rounded-full overflow-hidden border-2 cursor-pointer ${
-                        editAvatar === imgUrl ? 'border-[#B98289] ring-2 ring-[#B98289]/30' : 'border-gray-200'
-                      }`}
-                    >
-                      <img src={imgUrl} alt="Avatar option" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+                <label className="block font-semibold text-[#44352F] mb-2">Profile photograph</label>
+                <div className="flex items-center gap-4">
+                  <img src={photoPreview || editAvatar || '/favicon.svg'} alt="Photo preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#D8A0A5]" />
+                  <label className="px-3 py-2 rounded-xl border border-[#E9D9C9] bg-white text-[#44352F] cursor-pointer font-serif">
+                    Upload from gallery
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => handlePhotoChange(event.target.files?.[0])} />
+                  </label>
                 </div>
               </div>
 
@@ -442,7 +531,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#B98289] text-white hover:bg-[#A36C73] transition-colors cursor-pointer font-serif font-medium"
                 >
-                  Save Scrapbook
+                  {savingProfile ? 'Saving…' : 'Save Scrapbook'}
                 </button>
               </div>
             </form>

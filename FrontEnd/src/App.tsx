@@ -46,6 +46,30 @@ export function App() {
   const [currentView, setCurrentView] = useState<string>('home');
   const [initialSearchQuery, setInitialSearchQuery] = useState<string>('');
   const [promptToAnswer, setPromptToAnswer] = useState<string | null>(null);
+  const [routeProfile, setRouteProfile] = useState<UserProfile | null>(null);
+  const [routeProfileLoading, setRouteProfileLoading] = useState(false);
+  const [routeProfileError, setRouteProfileError] = useState(false);
+
+  const openProfile = useCallback(async (pseudonym: string) => {
+    const encoded = encodeURIComponent(pseudonym);
+    window.history.pushState({}, '', `/profile/${encoded}`);
+    setCurrentView('profile-public'); setRouteProfileLoading(true); setRouteProfileError(false);
+    try { setRouteProfile(await profileApi.getProfile(pseudonym)); }
+    catch { setRouteProfile(null); setRouteProfileError(true); }
+    finally { setRouteProfileLoading(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  }, []);
+
+  useEffect(() => {
+    const resolvePath = () => {
+      const match = window.location.pathname.match(/^\/profile\/([^/]+)$/);
+      if (!match) return;
+      const pseudonym = decodeURIComponent(match[1]);
+      openProfile(pseudonym);
+    };
+    window.addEventListener('popstate', resolvePath);
+    resolvePath();
+    return () => window.removeEventListener('popstate', resolvePath);
+  }, [openProfile]);
 
   // Core Data States
   const [stories, setStories] = useState<Story[]>(() => {
@@ -144,12 +168,10 @@ export function App() {
     const fetchRemoteData = async () => {
       try {
         const feed = await storiesApi.getStories();
-        if (mounted && feed && feed.content && feed.content.length > 0) {
-          // Merge remote stories with default/local stories
-          const remoteIds = new Set(feed.content.map(s => String(s.id)));
-          const remainingLocal = stories.filter(s => !remoteIds.has(String(s.id)));
-          const combined = [...feed.content, ...remainingLocal];
-          setStories(combined);
+        if (mounted && feed && feed.content) {
+          // The backend is authoritative: an empty feed is a real empty feed.
+          setStories(feed.content);
+          localStorage.setItem('spilltea_stories', JSON.stringify(feed.content));
         }
       } catch (err) {
         console.warn('Backend offline or unreachable, using local journal data:', err);
@@ -512,15 +534,10 @@ export function App() {
 
   // Update profile
   const handleUpdateProfile = async (updated: Partial<UserProfile>) => {
-    updateCurrentUserState(updated);
-    showToast('Your scrapbook profile has been personalized.');
-    if (isAuthenticated) {
-      try {
-        await profileApi.updateProfile(updated);
-      } catch (err) {
-        console.warn('Failed to sync profile update to server:', err);
-      }
-    }
+    if (!isAuthenticated) return;
+    const saved = await profileApi.updateProfile(updated);
+    updateCurrentUserState(saved);
+    setRouteProfile((profile) => profile?.isSelf ? saved : profile);
   };
 
   // Reset Session (Prototype feature)
@@ -650,6 +667,7 @@ export function App() {
               setPromptToAnswer(promptText);
               setCurrentView('write');
             }}
+            onOpenProfile={openProfile}
           />
         )}
 
@@ -660,6 +678,10 @@ export function App() {
             onToggleSave={handleToggleSave}
             onReaction={handleReaction}
             initialSearchQuery={initialSearchQuery}
+            isAuthenticated={isAuthenticated}
+            onOpenProfile={openProfile}
+            onRefreshUser={async () => { await profileApi.getMyProfile().then(updateCurrentUserState); }}
+            onToast={showToast}
           />
         )}
 
@@ -692,7 +714,14 @@ export function App() {
             onUpdateProfile={handleUpdateProfile}
             onReadStory={(s) => setActiveStoryModal(s)}
             onToast={showToast}
+            onOpenProfile={openProfile}
           />
+        )}
+
+        {currentView === 'profile-public' && (
+          routeProfileLoading ? <div className="py-24 text-center font-serif text-[#666747]">Opening this little corner…</div> :
+          routeProfileError || !routeProfile ? <div className="max-w-xl mx-auto py-24 px-6 text-center"><h2 className="font-handwriting text-4xl text-[#B98289]">This little corner couldn’t be found</h2><p className="mt-3 font-serif text-[#666747]">The profile may have moved, gone private, or never existed.</p><button onClick={() => handleNavbarNavigate('home')} className="mt-6 px-5 py-2 rounded-full bg-[#B98289] text-white font-serif">Return home</button></div> :
+          <ProfileView user={routeProfile} stories={routeProfile.stories || []} onUpdateProfile={handleUpdateProfile} onReadStory={(s) => setActiveStoryModal(s)} onToast={showToast} onOpenProfile={openProfile} />
         )}
 
         {currentView === 'saved' && (
@@ -749,6 +778,7 @@ export function App() {
         onPinComment={handlePinComment}
         onReportStory={handleReportStory}
         highlightCommentId={highlightCommentId}
+        onOpenProfile={openProfile}
       />
 
       <SupportModal

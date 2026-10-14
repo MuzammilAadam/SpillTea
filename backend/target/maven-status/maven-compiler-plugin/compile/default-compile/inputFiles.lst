@@ -28,6 +28,11 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\moodboard\MoodboardDt
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\moodboard\ReorderCardsRequest.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\moodboard\SaveMoodboardRequest.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\notification\NotificationResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\KindredPageResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\KindredProfileResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\KindredStatsResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\PeopleSearchResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\RelationshipResponse.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\UpdateProfileRequest.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\UserProfileResponse.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\story\ReactionCountsDto.java
@@ -51,6 +56,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\ReactionType
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\ReportStatus.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\Role.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\StoryIntent.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Follow.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Letter.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\LetterReaction.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\LetterReply.java
@@ -71,6 +77,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\BookmarkReposi
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CollectionRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CommentLikeRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CommentRepository.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\FollowRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterReactionRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterReplyRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterRepository.java
@@ -89,6 +96,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\security\RateLimitingFilt
 D:\project\SpillTea\backend\src\main\java\com\spilltea\security\UserPrincipal.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\service\AuthService.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\service\BookmarkService.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\service\KindredService.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\service\LetterService.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\service\ModerationService.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\service\MoodboardService.java

@@ -244,9 +244,9 @@ export const CURRENT_USER: UserProfile = {
   joinedDate: 'Autumn 2025',
   currentlyFeeling: 'Softly contemplative & grateful for small mercies',
   stats: {
-    storiesShared: 5,
-    lettersPenciled: 8,
-    momentsEmpathized: 147,
+    storiesShared: 0,
+    lettersPenciled: 0,
+    momentsEmpathized: 0,
   },
   favoriteQuotes: [
     { text: '“And now here is my secret, a very simple secret: It is only with the heart that one can see rightly; what is essential is invisible to the eye.”', author: 'Antoine de Saint-Exupéry' },

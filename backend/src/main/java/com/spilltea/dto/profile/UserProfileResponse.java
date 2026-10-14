@@ -3,6 +3,7 @@ package com.spilltea.dto.profile;
 import com.spilltea.dto.moodboard.MoodboardCardDto;
 import java.util.ArrayList;
 import java.util.List;
+import com.spilltea.dto.story.StoryResponse;
 
 public class UserProfileResponse {
 
@@ -71,10 +72,12 @@ public class UserProfileResponse {
     private String joinedDate;
     private String currentlyFeeling;
     private ProfileStats stats = new ProfileStats();
+    private KindredStatsResponse kindredStats = new KindredStatsResponse(0, 0, 0);
     private List<QuoteItem> favoriteQuotes = new ArrayList<>();
     private List<ReflectionItem> reflectionAnswers = new ArrayList<>();
     private List<MoodboardCardDto> moodboard = new ArrayList<>();
     private boolean isSelf = false;
+    private List<StoryResponse> stories = new ArrayList<>();
 
     public UserProfileResponse() {}
 
@@ -105,6 +108,9 @@ public class UserProfileResponse {
     public ProfileStats getStats() { return stats; }
     public void setStats(ProfileStats stats) { this.stats = stats; }
 
+    public KindredStatsResponse getKindredStats() { return kindredStats; }
+    public void setKindredStats(KindredStatsResponse kindredStats) { this.kindredStats = kindredStats; }
+
     public List<QuoteItem> getFavoriteQuotes() { return favoriteQuotes; }
     public void setFavoriteQuotes(List<QuoteItem> favoriteQuotes) { this.favoriteQuotes = favoriteQuotes; }
 
@@ -116,4 +122,7 @@ public class UserProfileResponse {
 
     public boolean isSelf() { return isSelf; }
     public void setSelf(boolean self) { isSelf = self; }
+
+    public List<StoryResponse> getStories() { return stories; }
+    public void setStories(List<StoryResponse> stories) { this.stories = stories; }
 }

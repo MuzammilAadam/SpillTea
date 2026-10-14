@@ -3,6 +3,7 @@ import { Story, Category } from '../../types';
 import { Search, Filter, Sparkles, BookOpen, Clock, MessageSquare, Compass, ArrowUpDown } from 'lucide-react';
 import { StoryCard } from '../story/StoryCard';
 import { TeacupIcon, PressedFlower, WashiTapeStrip } from '../common/Botanicals';
+import { PeopleSearch } from '../profile/PeopleSearch';
 
 interface ExploreViewProps {
   stories: Story[];
@@ -10,6 +11,10 @@ interface ExploreViewProps {
   onToggleSave: (storyId: string) => void;
   onReaction: (storyId: string, reactionType: 'hearYou' | 'feltThisToo' | 'thankYou' | 'sendingSupport') => void;
   initialSearchQuery?: string;
+  isAuthenticated: boolean;
+  onOpenProfile: (pseudonym: string) => void;
+  onRefreshUser: () => Promise<void>;
+  onToast: (message: string) => void;
 }
 
 export const ExploreView: React.FC<ExploreViewProps> = ({
@@ -18,6 +23,10 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   onToggleSave,
   onReaction,
   initialSearchQuery = '',
+  isAuthenticated,
+  onOpenProfile,
+  onRefreshUser,
+  onToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
@@ -85,6 +94,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           Find letters written by souls walking paths like yours. Search by honest thoughts, topics of grief and growth, or browse curated shelves.
         </p>
       </div>
+
+      <PeopleSearch initialQuery={initialSearchQuery} isAuthenticated={isAuthenticated} onOpenProfile={onOpenProfile} onRefreshUser={onRefreshUser} onToast={onToast} />
 
       {/* Curated Shelves / Topic Collections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -189,6 +200,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               onRead={onReadStory}
               onToggleSave={onToggleSave}
               onReaction={onReaction}
+              onOpenProfile={onOpenProfile}
             />
           ))}
         </div>

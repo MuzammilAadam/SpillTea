@@ -17,6 +17,7 @@ interface HomeViewProps {
   onWriteClick: () => void;
   onExploreClick: () => void;
   onWritePrompt: (promptText: string) => void;
+  onOpenProfile: (pseudonym: string) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -27,6 +28,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onWriteClick,
   onExploreClick,
   onWritePrompt,
+  onOpenProfile,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
   const [selectedIntent, setSelectedIntent] = useState<StoryIntent | null>(null);
@@ -112,6 +114,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   onToggleSave={onToggleSave}
                   onReaction={onReaction}
                   featured={true}
+                  onOpenProfile={onOpenProfile}
                 />
               </section>
             )}
@@ -136,6 +139,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       onRead={onReadStory}
                       onToggleSave={onToggleSave}
                       onReaction={onReaction}
+                      onOpenProfile={onOpenProfile}
                     />
                   ))}
 

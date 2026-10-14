@@ -128,9 +128,39 @@ export interface UserProfile {
     lettersPenciled: number;
     momentsEmpathized: number;
   };
+  kindredStats?: {
+    storiesCount: number;
+    kindredCount: number;
+    myKindredCount: number;
+  };
+  isSelf?: boolean;
   favoriteQuotes: { text: string; author: string }[];
   reflectionAnswers: { prompt: string; answer: string }[];
   moodboard: MoodboardItem[];
+  stories?: Story[];
+}
+
+export interface KindredProfile {
+  id: string;
+  pseudonym: string;
+  displayName: string;
+  bio: string;
+  avatar: string;
+  following: boolean;
+  mutualKindred: boolean;
+}
+
+export interface KindredPage {
+  content: KindredProfile[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export interface PeopleSearchResult extends KindredProfile {
+  kindredCount: number;
 }
 
 export interface NotificationItem {

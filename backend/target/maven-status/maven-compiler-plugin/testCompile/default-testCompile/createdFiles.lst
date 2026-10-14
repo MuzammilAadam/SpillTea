@@ -1,5 +1,6 @@
+com\spilltea\KindredIntegrationTest.class
 com\spilltea\NotificationAndUploadIntegrationTest.class
+com\spilltea\LetterIntegrationTest.class
 com\spilltea\MoodboardIntegrationTest.class
 com\spilltea\StoryIntegrationTest.class
 com\spilltea\AuthIntegrationTest.class
-com\spilltea\LetterIntegrationTest.class

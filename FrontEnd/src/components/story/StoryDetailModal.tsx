@@ -30,6 +30,7 @@ interface StoryDetailModalProps {
   onPinComment: (storyId: string, commentId: string) => void;
   onReportStory: (storyId: string, reason: string) => void;
   highlightCommentId?: string;
+  onOpenProfile?: (pseudonym: string) => void;
 }
 
 export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
@@ -42,6 +43,7 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
   onPinComment,
   onReportStory,
   highlightCommentId,
+  onOpenProfile,
 }) => {
   if (!story) return null;
 
@@ -121,16 +123,12 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#E9D9C9] bg-[#FFF8F0]/80">
           <div className="flex items-center gap-3">
-            <img
-              src={story.authorAvatar}
-              alt={story.authorPseudonym}
-              className="w-10 h-10 rounded-full object-cover border border-[#D8A0A5]"
-            />
+            <button onClick={() => onOpenProfile?.(story.authorPseudonym)}><img src={story.authorAvatar || '/favicon.svg'} alt={story.authorPseudonym} className="w-10 h-10 rounded-full object-cover border border-[#D8A0A5]" /></button>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-serif font-bold text-sm text-[#44352F]">
+                <button onClick={() => onOpenProfile?.(story.authorPseudonym)} className="font-serif font-bold text-sm text-[#44352F] hover:text-[#B98289]">
                   {story.authorPseudonym}
-                </span>
+                </button>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FFFCF8] border border-[#E9D9C9] text-[#666747]">
                   {story.category}
                 </span>
@@ -362,14 +360,10 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
 
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <img
-                          src={comment.authorAvatar}
-                          alt={comment.authorPseudonym}
-                          className="w-6 h-6 rounded-full object-cover border border-[#D8A0A5]"
-                        />
-                        <span className="font-serif font-semibold text-xs text-[#44352F]">
+                        <button onClick={() => onOpenProfile?.(comment.authorPseudonym)}><img src={comment.authorAvatar || '/favicon.svg'} alt={comment.authorPseudonym} className="w-6 h-6 rounded-full object-cover border border-[#D8A0A5]" /></button>
+                        <button onClick={() => onOpenProfile?.(comment.authorPseudonym)} className="font-serif font-semibold text-xs text-[#44352F] hover:text-[#B98289]">
                           {comment.authorPseudonym}
-                        </span>
+                        </button>
                         {comment.isStoryAuthor && (
                           <span className="text-[10px] font-sans-clean px-1.5 py-0.2 rounded bg-[#F7DDE1] text-[#B98289] font-bold">
                             Author
@@ -421,14 +415,10 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
                         {comment.replies.map((reply) => (
                           <div key={reply.id} className="text-xs bg-[#FFF8F0]/60 p-3 rounded-lg border border-[#E9D9C9]/60">
                             <div className="flex items-center gap-2 mb-1">
-                              <img
-                                src={reply.authorAvatar}
-                                alt={reply.authorPseudonym}
-                                className="w-5 h-5 rounded-full object-cover border border-[#D8A0A5]"
-                              />
-                              <span className="font-serif font-semibold text-[#44352F]">
+                              <button onClick={() => onOpenProfile?.(reply.authorPseudonym)}><img src={reply.authorAvatar || '/favicon.svg'} alt={reply.authorPseudonym} className="w-5 h-5 rounded-full object-cover border border-[#D8A0A5]" /></button>
+                              <button onClick={() => onOpenProfile?.(reply.authorPseudonym)} className="font-serif font-semibold text-[#44352F] hover:text-[#B98289]">
                                 {reply.authorPseudonym}
-                              </span>
+                              </button>
                               {reply.isStoryAuthor && (
                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#F7DDE1] text-[#B98289]">
                                   Author

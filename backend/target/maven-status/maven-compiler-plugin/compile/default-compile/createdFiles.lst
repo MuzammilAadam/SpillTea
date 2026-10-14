@@ -12,6 +12,7 @@ com\spilltea\repository\UserRepository.class
 com\spilltea\dto\comment\CommentRequest.class
 com\spilltea\entity\CommentLike.class
 com\spilltea\repository\MoodboardRepository.class
+com\spilltea\dto\profile\KindredProfileResponse.class
 com\spilltea\dto\story\StoryResponse.class
 com\spilltea\entity\enums\Role.class
 com\spilltea\security\RateLimitingFilter$RequestBucket.class
@@ -30,8 +31,10 @@ com\spilltea\dto\story\ReactionCountsDto.class
 com\spilltea\dto\common\ApiResponse.class
 com\spilltea\repository\ReportRepository.class
 com\spilltea\dto\moodboard\MoodboardCardDto.class
+com\spilltea\repository\FollowRepository.class
 com\spilltea\entity\enums\AccountStatus.class
 com\spilltea\repository\CommentLikeRepository.class
+com\spilltea\dto\profile\KindredPageResponse.class
 com\spilltea\repository\NotificationRepository.class
 com\spilltea\service\StorageService.class
 com\spilltea\config\SecurityConfig.class
@@ -41,6 +44,8 @@ com\spilltea\service\AuthService.class
 com\spilltea\repository\BookmarkRepository.class
 com\spilltea\service\LetterService.class
 com\spilltea\controller\UploadController.class
+com\spilltea\entity\Follow.class
+com\spilltea\service\KindredService.class
 com\spilltea\repository\LetterReplyRepository.class
 com\spilltea\exception\ResourceNotFoundException.class
 com\spilltea\dto\auth\RegisterRequest.class
@@ -52,6 +57,7 @@ com\spilltea\controller\ModerationController.class
 com\spilltea\repository\StoryRepository.class
 com\spilltea\dto\profile\UserProfileResponse$ReflectionItem.class
 com\spilltea\dto\profile\UpdateProfileRequest.class
+com\spilltea\dto\profile\PeopleSearchResponse.class
 com\spilltea\repository\ReactionRepository.class
 com\spilltea\SpillTeaApplication.class
 com\spilltea\entity\LetterReaction.class
@@ -87,6 +93,7 @@ com\spilltea\dto\letter\LetterResponse.class
 com\spilltea\security\CustomUserDetailsService.class
 com\spilltea\dto\comment\CommentResponse.class
 com\spilltea\dto\moodboard\MoodboardDto.class
+com\spilltea\dto\profile\RelationshipResponse.class
 com\spilltea\entity\enums\StoryIntent.class
 com\spilltea\exception\UnauthorizedException.class
 com\spilltea\security\JwtTokenProvider.class
@@ -97,6 +104,7 @@ com\spilltea\entity\Story.class
 com\spilltea\dto\moderation\ReportRequest.class
 com\spilltea\security\UserPrincipal.class
 com\spilltea\controller\MoodboardController.class
+com\spilltea\dto\profile\KindredStatsResponse.class
 com\spilltea\dto\moodboard\ReorderCardsRequest.class
 com\spilltea\config\WebMvcConfig.class
 com\spilltea\dto\story\StoryRequest.class

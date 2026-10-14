@@ -3,6 +3,7 @@ package com.spilltea.entity.enums;
 public enum NotificationType {
     REPLY("reply"),
     REACTION("reaction"),
+    FOLLOW("follow"),
     SAVED_UPDATE("saved_update"),
     COMFORT("comfort");
 

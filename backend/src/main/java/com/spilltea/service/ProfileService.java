@@ -3,6 +3,7 @@ package com.spilltea.service;
 import com.spilltea.dto.moodboard.MoodboardCardDto;
 import com.spilltea.dto.profile.UpdateProfileRequest;
 import com.spilltea.dto.profile.UserProfileResponse;
+import com.spilltea.dto.profile.KindredStatsResponse;
 import com.spilltea.dto.story.StoryResponse;
 import com.spilltea.entity.Moodboard;
 import com.spilltea.entity.User;
@@ -36,12 +37,14 @@ public class ProfileService {
     private final LetterRepository letterRepository;
     private final ReactionRepository reactionRepository;
     private final StorageService storageService;
+    private final KindredService kindredService;
+    private final BlockedUserRepository blockedUserRepository;
 
     public ProfileService(UserRepository userRepository, StoryService storyService,
                           MoodboardService moodboardService, MoodboardRepository moodboardRepository,
                           MoodboardCardRepository moodboardCardRepository, LetterService letterService,
                           LetterRepository letterRepository, ReactionRepository reactionRepository,
-                          StorageService storageService) {
+                          StorageService storageService, KindredService kindredService, BlockedUserRepository blockedUserRepository) {
         this.userRepository = userRepository;
         this.storyService = storyService;
         this.moodboardService = moodboardService;
@@ -51,6 +54,8 @@ public class ProfileService {
         this.letterRepository = letterRepository;
         this.reactionRepository = reactionRepository;
         this.storageService = storageService;
+        this.kindredService = kindredService;
+        this.blockedUserRepository = blockedUserRepository;
     }
 
     public UserProfileResponse getMyProfile(Long userId) {
@@ -65,6 +70,12 @@ public class ProfileService {
     public UserProfileResponse getPublicProfile(String pseudonym, Long currentUserId) {
         User user = userRepository.findByPseudonym(pseudonym)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found for: " + pseudonym));
+        if (user.getStatus() != com.spilltea.entity.enums.AccountStatus.ACTIVE
+                || (currentUserId != null && !user.getId().equals(currentUserId)
+                && (blockedUserRepository.existsByBlockerIdAndBlockedId(currentUserId, user.getId())
+                || blockedUserRepository.existsByBlockerIdAndBlockedId(user.getId(), currentUserId)))) {
+            throw new ResourceNotFoundException("Profile not found for: " + pseudonym);
+        }
 
         UserProfileResponse dto = buildProfileResponse(user, currentUserId);
         dto.setSelf(currentUserId != null && user.getId().equals(currentUserId));
@@ -76,8 +87,17 @@ public class ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (request.getPseudonym() != null && !request.getPseudonym().equals(user.getPseudonym())) {
-            if (userRepository.existsByPseudonym(request.getPseudonym())) {
+        if (request.getDisplayName() != null && (request.getDisplayName().trim().isBlank() || request.getDisplayName().trim().length() > 120)) {
+            throw new BadRequestException("Display name must be between 1 and 120 characters.");
+        }
+        if (request.getPseudonym() != null && (request.getPseudonym().trim().isBlank() || request.getPseudonym().trim().length() > 80
+                || !request.getPseudonym().trim().matches("[A-Za-z0-9_-]+"))) {
+            throw new BadRequestException("Pen names may contain letters, numbers, underscores, and hyphens.");
+        }
+        if (request.getBio() != null && request.getBio().length() > 2000) throw new BadRequestException("Bio is too long.");
+
+        if (request.getPseudonym() != null && !request.getPseudonym().trim().equals(user.getPseudonym())) {
+            if (userRepository.existsByPseudonym(request.getPseudonym().trim())) {
                 throw new BadRequestException("This pen name is already taken. Please choose another.");
             }
             user.setPseudonym(request.getPseudonym().trim());
@@ -99,14 +119,13 @@ public class ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Delete old avatar if stored locally
-        if (user.getAvatar() != null && user.getAvatar().startsWith("/uploads/")) {
-            storageService.delete(user.getAvatar());
-        }
-
         String url = storageService.store(file, userId);
+        String previousAvatar = user.getAvatar();
         user.setAvatar(url);
         userRepository.save(user);
+        if (previousAvatar != null && previousAvatar.startsWith("/uploads/")) {
+            storageService.delete(previousAvatar);
+        }
         return url;
     }
 
@@ -122,11 +141,14 @@ public class ProfileService {
         dto.setJoinedDate(user.getCreatedAt().format(JOINED_FORMATTER));
 
         // Stats
-        long storiesCount = storyService.getMyStories(user.getId()).size();
+        KindredStatsResponse kindredStats = kindredService.stats(user.getId());
+        long storiesCount = kindredStats.storiesCount();
         long lettersCount = letterRepository.countByAuthorId(user.getId());
         long reactionsReceived = reactionRepository.countByStoryAuthorId(user.getId());
 
         dto.setStats(new UserProfileResponse.ProfileStats(storiesCount, lettersCount, reactionsReceived));
+        dto.setKindredStats(kindredStats);
+        dto.setStories(storyService.getPublishedStoriesForAuthor(user.getId(), currentUserId));
 
         // Moodboard cards (published, public only for non-owners)
         moodboardRepository.findByOwnerId(user.getId()).ifPresent(moodboard -> {

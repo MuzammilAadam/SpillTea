@@ -35,11 +35,12 @@ public class StorageService {
     public String store(MultipartFile file, Long ownerId) throws IOException {
         validateFile(file);
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
-        }
+        String extension = switch (file.getContentType().toLowerCase()) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> throw new BadRequestException("Please upload a JPEG, PNG, or WebP photograph.");
+        };
 
         String storedFilename = ownerId + "_" + UUID.randomUUID() + extension;
         Path targetLocation = storageRoot.resolve(storedFilename);

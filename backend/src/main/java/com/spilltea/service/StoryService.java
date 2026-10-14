@@ -68,9 +68,13 @@ public class StoryService {
     // ── Authenticated User Stories ─────────────────────────────────────────────
 
     public List<StoryResponse> getMyStories(Long userId) {
-        return storyRepository.findByAuthorIdAndStatus(userId, PublicationStatus.PUBLISHED)
+        return getPublishedStoriesForAuthor(userId, userId);
+    }
+
+    public List<StoryResponse> getPublishedStoriesForAuthor(Long authorId, Long viewerId) {
+        return storyRepository.findByAuthorIdAndStatus(authorId, PublicationStatus.PUBLISHED)
                 .stream()
-                .map(s -> toStoryResponse(s, userId, false))
+                .map(s -> toStoryResponse(s, viewerId, false))
                 .collect(Collectors.toList());
     }
 

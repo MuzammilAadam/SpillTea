@@ -71,7 +71,8 @@ public class SecurityConfig {
                 // Public Content Feeds (Read Only)
                 .requestMatchers(HttpMethod.GET, "/api/stories", "/api/stories/{id}", "/api/stories/{id}/comments").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/letters").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/profiles/{pseudonym}", "/api/profiles/{pseudonym}/moodboard").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/profiles/{pseudonym}", "/api/profiles/{pseudonym}/moodboard", "/api/profiles/search").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/profiles/*/stats", "/api/profiles/*/kindred", "/api/profiles/*/my-kindred", "/api/profiles/*/relationship").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
 
                 // Moderation Endpoints
