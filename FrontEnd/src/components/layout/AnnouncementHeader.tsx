@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, HeartHandshake, Sparkles } from 'lucide-react';
-import { UserProfile } from '../../types';
+import { UserProfile, NotificationItem } from '../../types';
+import { NotificationDropdown } from '../notifications/NotificationDropdown';
 
 interface AnnouncementHeaderProps {
   onOpenSupport: () => void;
-  onOpenNotifications: () => void;
+  onOpenNotifications?: () => void;
   unreadNotificationsCount: number;
   onNavigate: (view: string) => void;
   currentUser: UserProfile;
@@ -12,6 +13,9 @@ interface AnnouncementHeaderProps {
   onOpenAuth?: () => void;
   isAuthenticated?: boolean;
   onLogout?: () => void;
+  notifications?: NotificationItem[];
+  onMarkAllAsRead?: () => void;
+  onNotificationClick?: (notif: NotificationItem) => void;
 }
 
 export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
@@ -24,7 +28,33 @@ export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
   onOpenAuth,
   isAuthenticated = false,
   onLogout,
+  notifications = [],
+  onMarkAllAsRead,
+  onNotificationClick,
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  const handleBellClick = () => {
+    setIsDropdownOpen((prev) => !prev);
+    if (onOpenNotifications) {
+      onOpenNotifications();
+    }
+  };
   return (
     <div className="w-full bg-[#F7DDE1]/60 border-b border-[#E9D9C9] px-4 py-2 text-xs text-[#44352F]">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -59,18 +89,42 @@ export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
             <span>Need Help?</span>
           </button>
 
-          <button
-            onClick={onOpenNotifications}
-            className="relative p-1.5 rounded-full hover:bg-white/80 text-[#44352F] transition-colors cursor-pointer"
-            title="Notifications"
-          >
-            <Bell className="w-3.5 h-3.5 text-[#B98289]" />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B98289] text-white text-[9px] flex items-center justify-center font-bold">
-                {unreadNotificationsCount}
-              </span>
-            )}
-          </button>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={handleBellClick}
+              className={`relative p-1.5 rounded-full transition-colors cursor-pointer ${
+                unreadNotificationsCount > 0
+                  ? 'hover:bg-[#F7DDE1]/60 animate-notif-ping'
+                  : 'hover:bg-white/80'
+              } text-[#44352F]`}
+              title="Notifications"
+              aria-label="View notifications"
+            >
+              <Bell className="w-3.5 h-3.5 text-[#B98289]" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B98289] text-white text-[9px] flex items-center justify-center font-bold animate-badge-pop">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+
+            <NotificationDropdown
+              isOpen={isDropdownOpen}
+              onClose={() => setIsDropdownOpen(false)}
+              notifications={notifications}
+              onMarkAllAsRead={() => onMarkAllAsRead && onMarkAllAsRead()}
+              onNotificationClick={(notif) => {
+                setIsDropdownOpen(false);
+                if (onNotificationClick) onNotificationClick(notif);
+              }}
+              onViewAll={() => {
+                setIsDropdownOpen(false);
+                onNavigate('notifications');
+              }}
+              unreadCount={unreadNotificationsCount}
+            />
+          </div>
+
 
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5">

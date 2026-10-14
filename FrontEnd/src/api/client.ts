@@ -88,6 +88,13 @@ export const api = {
       headers,
     }),
 
+  patch: <T>(url: string, body?: any, headers?: Record<string, string>) =>
+    request<T>(url, {
+      method: 'PATCH',
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
+      headers,
+    }),
+
   delete: <T>(url: string, headers?: Record<string, string>) =>
     request<T>(url, { method: 'DELETE', headers }),
 };

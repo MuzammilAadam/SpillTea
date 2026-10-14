@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Category, StoryIntent, Mood, Story, UnsentLetter, LetterCategory } from '../../types';
 import { Feather, Save, Eye, Send, Lock, Globe, Sparkles, AlertCircle, Check, ArrowLeft } from 'lucide-react';
 import { TeacupIcon, PressedFlower, OliveBranch, WashiTapeStrip, PaperClip, WaxSeal } from '../common/Botanicals';
+import { useAuth } from '../../context/AuthContext';
 
 interface WriteLetterViewProps {
   onPublishStory: (newStory: Omit<Story, 'id' | 'reactions' | 'userReactions' | 'commentsCount' | 'saved' | 'comments'>) => void;
@@ -18,6 +19,7 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
   initialPrompt,
   onCancel,
 }) => {
+  const { isAuthenticated } = useAuth();
   // Mode: regular story vs unsent letter
   const [mode, setMode] = useState<'story' | 'unsent'>('story');
 
@@ -89,6 +91,18 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
       return;
     }
 
+    // Always preserve current draft before publish attempt
+    const draft = {
+      title: title.trim(),
+      content: content.trim(),
+      category: mode === 'story' ? category : letterCategory,
+      letterCategory,
+      mood,
+      intent,
+      isPrivate,
+    };
+    localStorage.setItem('spilltea_draft', JSON.stringify(draft));
+
     if (mode === 'unsent') {
       onPublishLetter({
         recipient: recipient.trim() || letterCategory,
@@ -101,8 +115,9 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
         washiColor: '#B7B99A',
         authorPseudonym: isAnonymous ? 'Anonymous' : 'TeaAndWildflowers',
       });
-      // clear draft
-      localStorage.removeItem('spilltea_draft');
+      if (isAuthenticated) {
+        localStorage.removeItem('spilltea_draft');
+      }
     } else {
       onPublishStory({
         title: title.trim(),
@@ -118,7 +133,9 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
         readTime: readTime,
         isPrivate: isPrivate,
       });
-      localStorage.removeItem('spilltea_draft');
+      if (isAuthenticated) {
+        localStorage.removeItem('spilltea_draft');
+      }
     }
   };
 
@@ -134,8 +151,8 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
           <span>Return to sanctuary</span>
         </button>
 
-        {/* Mode switcher: Story vs Unsent Letter */}
-        <div className="flex rounded-full bg-[#E9D9C9]/50 p-1 border border-[#E9D9C9] text-xs">
+        {/* Mode switcher: Story vs Unsent Letter with smooth transitions */}
+        <div className="flex rounded-full bg-[#E9D9C9]/50 p-1 border border-[#E9D9C9] text-xs transition-all">
           <button
             type="button"
             onClick={() => setMode('story')}
@@ -161,8 +178,8 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
         </div>
       </div>
 
-      {/* Writing Desk Container (Reference C) */}
-      <div className="relative bg-[#FFFCF8] rounded-3xl border border-[#E9D9C9] p-6 sm:p-12 shadow-xl overflow-hidden card-paper">
+      {/* Writing Desk Container */}
+      <div className="relative bg-[#FFFCF8] rounded-3xl border border-[#E9D9C9] p-6 sm:p-12 shadow-xl overflow-hidden card-paper animate-slide-up" style={{ animationDuration: '450ms' }}>
         {/* Decorative Washi Tape & Stationery Accents */}
         <div className="absolute -top-1 left-12 pointer-events-none">
           <WashiTapeStrip color="#F7DDE1" width="w-32" rotation="-rotate-1" />
@@ -170,12 +187,17 @@ export const WriteLetterView: React.FC<WriteLetterViewProps> = ({
         <div className="absolute -top-1 right-16 pointer-events-none">
           <WashiTapeStrip color="#B7B99A" width="w-24" rotation="rotate-2" />
         </div>
-        <div className="absolute top-6 right-6 opacity-60 hidden sm:block pointer-events-none">
+        <div className="absolute top-6 right-6 opacity-60 hidden sm:block pointer-events-none animate-float-drift">
           <PressedFlower className="w-8 h-8 text-[#D8A0A5]" />
+        </div>
+        {/* Animated pen & paper clip stationery accents */}
+        <div className="absolute top-6 left-6 opacity-40 hidden sm:flex items-center gap-2 pointer-events-none">
+          <Feather className="w-5 h-5 text-[#B98289] animate-float-slow" />
+          <PaperClip className="w-4 h-6 text-[#666747]" />
         </div>
 
         {/* Page Title & Calming Subtitle */}
-        <div className="text-center mb-8 pt-2">
+        <div className="text-center mb-8 pt-2 animate-fadeIn" style={{ animationDuration: '600ms' }}>
           <h1 className="font-handwriting text-5xl sm:text-6xl text-[#B98289] font-normal">
             Let it out.
           </h1>

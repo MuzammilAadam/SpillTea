@@ -8,6 +8,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\controller\MoodboardContr
 D:\project\SpillTea\backend\src\main\java\com\spilltea\controller\NotificationController.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\controller\ProfileController.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\controller\StoryController.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\controller\UploadController.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\auth\AuthResponse.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\auth\ChangePasswordRequest.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\auth\LoginRequest.java
@@ -32,6 +33,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\profile\UserProfileRe
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\story\ReactionCountsDto.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\story\StoryRequest.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\story\StoryResponse.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\dto\upload\UploadResponse.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\BlockedUser.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Bookmark.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Collection.java
@@ -50,12 +52,15 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\ReportStatus
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\Role.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\enums\StoryIntent.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Letter.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\LetterReaction.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\LetterReply.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Moodboard.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\MoodboardCard.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Notification.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Reaction.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Report.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\Story.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\UploadedImage.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\entity\User.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\exception\BadRequestException.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\exception\GlobalExceptionHandler.java
@@ -66,6 +71,8 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\BookmarkReposi
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CollectionRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CommentLikeRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\CommentRepository.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterReactionRepository.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterReplyRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\LetterRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\MoodboardCardRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\MoodboardRepository.java
@@ -73,6 +80,7 @@ D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\NotificationRe
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\ReactionRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\ReportRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\StoryRepository.java
+D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\UploadedImageRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\repository\UserRepository.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\security\CustomUserDetailsService.java
 D:\project\SpillTea\backend\src\main\java\com\spilltea\security\JwtAuthenticationFilter.java

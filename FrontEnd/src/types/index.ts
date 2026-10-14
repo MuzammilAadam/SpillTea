@@ -93,7 +93,7 @@ export interface Draft {
 
 export interface MoodboardItem {
   id: string;
-  type: 'image' | 'note' | 'quote' | 'prompt';
+  type: 'image' | 'note' | 'quote' | 'prompt' | 'photo';
   title?: string;
   content: string;
   image?: string;
@@ -101,6 +101,17 @@ export interface MoodboardItem {
   rotation?: string;
   washiTape?: boolean;
   color?: string;
+  photoStyle?: 'polaroid' | 'tilted' | 'handwritten' | 'tape' | 'cream-frame';
+  cardSize?: 'normal' | 'wide' | 'compact';
+}
+
+export interface UploadResponse {
+  id: number;
+  url: string;
+  originalFilename?: string;
+  contentType?: string;
+  fileSize?: number;
+  createdAt?: string;
 }
 
 export interface UserProfile {
@@ -130,4 +141,10 @@ export interface NotificationItem {
   timestamp: string;
   read: boolean;
   storyId?: string;
+  letterId?: string;
+  commentId?: string;
+  actorPseudonym?: string;
+  actorAvatar?: string;
+  actorId?: number;
+  recipientId?: number;
 }

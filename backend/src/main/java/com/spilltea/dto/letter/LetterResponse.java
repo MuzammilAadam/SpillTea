@@ -14,6 +14,9 @@ public class LetterResponse {
     private String paperTexture;
     private String authorPseudonym;
     private boolean isAuthor;
+    private long reactionsCount = 0;
+    private boolean userReacted = false;
+    private long repliesCount = 0;
 
     public LetterResponse() {}
 
@@ -55,4 +58,13 @@ public class LetterResponse {
 
     public boolean isAuthor() { return isAuthor; }
     public void setAuthor(boolean author) { isAuthor = author; }
+
+    public long getReactionsCount() { return reactionsCount; }
+    public void setReactionsCount(long reactionsCount) { this.reactionsCount = reactionsCount; }
+
+    public boolean isUserReacted() { return userReacted; }
+    public void setUserReacted(boolean userReacted) { this.userReacted = userReacted; }
+
+    public long getRepliesCount() { return repliesCount; }
+    public void setRepliesCount(long repliesCount) { this.repliesCount = repliesCount; }
 }

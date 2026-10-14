@@ -29,6 +29,7 @@ interface StoryDetailModalProps {
   onLikeComment: (storyId: string, commentId: string) => void;
   onPinComment: (storyId: string, commentId: string) => void;
   onReportStory: (storyId: string, reason: string) => void;
+  highlightCommentId?: string;
 }
 
 export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
@@ -40,6 +41,7 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
   onLikeComment,
   onPinComment,
   onReportStory,
+  highlightCommentId,
 }) => {
   if (!story) return null;
 
@@ -50,6 +52,18 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
   const [reportReason, setReportReason] = useState('Harassment or harmful content');
   const [reportSubmitted, setReportSubmitted] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  React.useEffect(() => {
+    if (highlightCommentId && story) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`comment-${highlightCommentId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightCommentId, story]);
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,15 +338,20 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
             {/* Comments List */}
             <div className="space-y-4">
               {story.comments && story.comments.length > 0 ? (
-                story.comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className={`p-4 rounded-xl border transition-all ${
-                      comment.isPinned
-                        ? 'bg-[#FFF8F0] border-[#D8A0A5] shadow-xs'
-                        : 'bg-white border-[#E9D9C9]'
-                    }`}
-                  >
+                story.comments.map((comment) => {
+                  const isHighlighted = highlightCommentId === comment.id;
+                  return (
+                    <div
+                      id={`comment-${comment.id}`}
+                      key={comment.id}
+                      className={`p-4 rounded-xl border transition-all ${
+                        isHighlighted
+                          ? 'bg-[#FFF0F2] border-[#B98289] ring-2 ring-[#B98289]/60 shadow-md'
+                          : comment.isPinned
+                          ? 'bg-[#FFF8F0] border-[#D8A0A5] shadow-xs'
+                          : 'bg-white border-[#E9D9C9]'
+                      }`}
+                    >
                     {/* Pinned by author badge */}
                     {comment.isPinned && (
                       <div className="flex items-center gap-1.5 text-xs text-[#B98289] font-medium mb-2 pb-1 border-b border-[#E9D9C9]">
@@ -446,7 +465,8 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
                       </form>
                     )}
                   </div>
-                ))
+                );
+              })
               ) : (
                 <div className="text-center py-8 bg-[#FFF8F0]/40 rounded-xl border border-dashed border-[#E9D9C9]">
                   <TeacupIcon className="w-6 h-6 text-[#B98289] mx-auto mb-2" />

@@ -20,4 +20,10 @@ export const lettersApi = {
 
   deleteLetter: (id: string | number) =>
     api.delete<void>(`/letters/${id}`),
+
+  toggleReaction: (id: string | number, type: string = 'feltThisToo') =>
+    api.put<UnsentLetter>(`/letters/${id}/reactions/${type}`),
+
+  addReply: (id: string | number, content: string) =>
+    api.post<void>(`/letters/${id}/replies`, { content }),
 };

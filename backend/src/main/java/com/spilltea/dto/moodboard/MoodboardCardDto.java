@@ -21,6 +21,8 @@ public class MoodboardCardDto {
     private Double height;
     private Integer displayOrder = 0;
     private String visibility = "PUBLIC";
+    private String photoStyle = "polaroid"; // polaroid, tilted, handwritten, tape, cream-frame
+    private String cardSize = "normal"; // normal, wide, compact
 
     public MoodboardCardDto() {}
 
@@ -83,4 +85,10 @@ public class MoodboardCardDto {
 
     public String getVisibility() { return visibility; }
     public void setVisibility(String visibility) { this.visibility = visibility; }
+
+    public String getPhotoStyle() { return photoStyle; }
+    public void setPhotoStyle(String photoStyle) { this.photoStyle = photoStyle; }
+
+    public String getCardSize() { return cardSize; }
+    public void setCardSize(String cardSize) { this.cardSize = cardSize; }
 }

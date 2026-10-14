@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Story } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import {
   Edit3,
   Heart,
@@ -30,6 +31,7 @@ interface ProfileViewProps {
   onUpdateProfile: (updated: Partial<UserProfile>) => void;
   onReadStory: (story: Story) => void;
   onToast?: (msg: string) => void;
+  onRequireAuth?: (action: () => void, message?: string) => boolean;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -38,7 +40,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateProfile,
   onReadStory,
   onToast = () => {},
+  onRequireAuth,
 }) => {
+  const { currentUser, isAuthenticated } = useAuth();
+  const isOwner = isAuthenticated && (!currentUser?.pseudonym || currentUser?.pseudonym === user.pseudonym);
   const [activeTab, setActiveTab] = useState<'moodboard' | 'stories' | 'collections' | 'about'>('moodboard');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -165,15 +170,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <span className="text-[#666747]">whispers received</span>
               </div>
 
-              <div className="md:ml-auto">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFF8F0] hover:bg-[#F7DDE1] text-[#44352F] border border-[#E9D9C9] transition-all cursor-pointer font-serif text-xs"
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-[#B98289]" />
-                  <span>Personalize scrapbook</span>
-                </button>
-              </div>
+              {isOwner && (
+                <div className="md:ml-auto">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFF8F0] hover:bg-[#F7DDE1] text-[#44352F] border border-[#E9D9C9] transition-all cursor-pointer font-serif text-xs"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#B98289]" />
+                    <span>Personalize scrapbook</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -234,8 +241,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <EditableMoodboard
           initialCards={user.moodboard}
           pseudonym={user.pseudonym}
-          isOwner={true}
+          isOwner={isOwner}
           onToast={onToast}
+          onRequireAuth={onRequireAuth}
         />
       )}
 

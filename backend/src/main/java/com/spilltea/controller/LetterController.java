@@ -65,4 +65,26 @@ public class LetterController {
         letterService.deleteLetter(id, principal.getId());
         return ResponseEntity.ok(ApiResponse.ok("The letter has been burned and removed.", null));
     }
+
+    @PutMapping("/letters/{id}/reactions/{type}")
+    public ResponseEntity<ApiResponse<LetterResponse>> toggleReaction(
+            @PathVariable Long id,
+            @PathVariable String type,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        LetterResponse response = letterService.toggleReaction(id, type, principal.getId());
+        return ResponseEntity.ok(ApiResponse.ok("Heartfelt response registered.", response));
+    }
+
+    @PostMapping("/letters/{id}/replies")
+    public ResponseEntity<ApiResponse<Void>> addReply(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String content = body.getOrDefault("content", "");
+        if (content.isBlank()) {
+            throw new com.spilltea.exception.BadRequestException("Response cannot be empty.");
+        }
+        letterService.addReply(id, content, principal.getId());
+        return ResponseEntity.ok(ApiResponse.ok("Your gentle whisper has reached the letter's author.", null));
+    }
 }

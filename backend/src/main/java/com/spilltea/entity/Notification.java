@@ -37,6 +37,14 @@ public class Notification {
     @JoinColumn(name = "story_id")
     private Story story;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "letter_id")
+    private Letter letter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    private Comment comment;
+
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false;
 
@@ -52,6 +60,18 @@ public class Notification {
         this.title = title;
         this.description = description;
         this.story = story;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Notification(User user, User actor, NotificationType type, String title, String description, Story story, Letter letter, Comment comment) {
+        this.user = user;
+        this.actor = actor;
+        this.type = type;
+        this.title = title;
+        this.description = description;
+        this.story = story;
+        this.letter = letter;
+        this.comment = comment;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -75,6 +95,12 @@ public class Notification {
 
     public Story getStory() { return story; }
     public void setStory(Story story) { this.story = story; }
+
+    public Letter getLetter() { return letter; }
+    public void setLetter(Letter letter) { this.letter = letter; }
+
+    public Comment getComment() { return comment; }
+    public void setComment(Comment comment) { this.comment = comment; }
 
     public boolean isRead() { return isRead; }
     public void setRead(boolean read) { isRead = read; }

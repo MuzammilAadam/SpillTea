@@ -35,19 +35,19 @@ public class StoryService {
     private final CommentLikeRepository commentLikeRepository;
     private final ReactionRepository reactionRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public StoryService(StoryRepository storyRepository, UserRepository userRepository,
                         CommentRepository commentRepository, CommentLikeRepository commentLikeRepository,
                         ReactionRepository reactionRepository, BookmarkRepository bookmarkRepository,
-                        NotificationRepository notificationRepository) {
+                        NotificationService notificationService) {
         this.storyRepository = storyRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.commentLikeRepository = commentLikeRepository;
         this.reactionRepository = reactionRepository;
         this.bookmarkRepository = bookmarkRepository;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     // ── Public Feed ────────────────────────────────────────────────────────────
@@ -141,13 +141,18 @@ public class StoryService {
             reactionRepository.save(new Reaction(story, user, reactionType));
             // Notify author (not for self-reactions)
             if (!story.getAuthor().getId().equals(currentUserId)) {
-                Notification notif = new Notification(
-                        story.getAuthor(), user, NotificationType.REACTION,
+                boolean isAnonymous = story.getDisplayMode() == AuthorDisplayMode.ANONYMOUS;
+                String actorName = isAnonymous ? "Someone" : user.getPseudonym();
+                notificationService.createNotification(
+                        story.getAuthor(),
+                        isAnonymous ? null : user,
+                        NotificationType.REACTION,
                         "Someone felt your words",
-                        user.getPseudonym() + " sent \"" + reactionType.getClientKey() + "\" to your story.",
-                        story
+                        actorName + " appreciated your story, ‘" + story.getTitle() + "’",
+                        story,
+                        null,
+                        null
                 );
-                notificationRepository.save(notif);
             }
         }
 
@@ -196,31 +201,40 @@ public class StoryService {
                     .orElseThrow(() -> new ResourceNotFoundException("Parent comment not found"));
             comment.setParent(parent);
 
+            Comment saved = commentRepository.save(comment);
+
             // Notify parent comment author
             if (!parent.getAuthor().getId().equals(currentUserId)) {
-                Notification notif = new Notification(
-                        parent.getAuthor(), author, NotificationType.REPLY,
+                notificationService.createNotification(
+                        parent.getAuthor(),
+                        author,
+                        NotificationType.REPLY,
                         "New reply to your comment",
                         author.getPseudonym() + " replied to your comment on \"" + story.getTitle() + "\"",
-                        story
+                        story,
+                        null,
+                        saved
                 );
-                notificationRepository.save(notif);
             }
+            return toCommentResponse(saved, story, currentUserId);
         } else {
+            Comment saved = commentRepository.save(comment);
+
             // Notify story author
             if (!story.getAuthor().getId().equals(currentUserId)) {
-                Notification notif = new Notification(
-                        story.getAuthor(), author, NotificationType.REPLY,
+                notificationService.createNotification(
+                        story.getAuthor(),
+                        author,
+                        NotificationType.REPLY,
                         "New heartfelt response",
-                        author.getPseudonym() + " left a response on \"" + story.getTitle() + "\"",
-                        story
+                        author.getPseudonym() + " replied to your story, ‘" + story.getTitle() + "’",
+                        story,
+                        null,
+                        saved
                 );
-                notificationRepository.save(notif);
             }
+            return toCommentResponse(saved, story, currentUserId);
         }
-
-        Comment saved = commentRepository.save(comment);
-        return toCommentResponse(saved, story, currentUserId);
     }
 
     @Transactional

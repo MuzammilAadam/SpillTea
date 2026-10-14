@@ -303,6 +303,8 @@ public class MoodboardService {
         if (dto.getColor() != null) style.put("color", dto.getColor());
         if (dto.getPaperClip() != null) style.put("paperClip", dto.getPaperClip());
         if (dto.getPressedFlower() != null) style.put("pressedFlower", dto.getPressedFlower());
+        if (dto.getPhotoStyle() != null) style.put("photoStyle", dto.getPhotoStyle());
+        if (dto.getCardSize() != null) style.put("cardSize", dto.getCardSize());
         if (style.isEmpty()) return null;
         try {
             return objectMapper.writeValueAsString(style);
@@ -346,6 +348,8 @@ public class MoodboardService {
                 dto.setColor((String) style.get("color"));
                 dto.setPaperClip((Boolean) style.get("paperClip"));
                 dto.setPressedFlower((Boolean) style.get("pressedFlower"));
+                if (style.get("photoStyle") != null) dto.setPhotoStyle((String) style.get("photoStyle"));
+                if (style.get("cardSize") != null) dto.setCardSize((String) style.get("cardSize"));
             } catch (Exception ignored) {}
         }
 

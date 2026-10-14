@@ -4,9 +4,11 @@ import com.spilltea.dto.common.ApiResponse;
 import com.spilltea.dto.notification.NotificationResponse;
 import com.spilltea.security.UserPrincipal;
 import com.spilltea.service.NotificationService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -23,8 +25,10 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(ApiResponse.ok(notificationService.getNotifications(principal.getId())));
+        return ResponseEntity.ok(ApiResponse.ok(notificationService.getNotifications(principal.getId(), page, size)));
     }
 
     @GetMapping("/unread-count")
@@ -35,16 +39,35 @@ public class NotificationController {
     }
 
     @PatchMapping("/{id}/read")
-    public ResponseEntity<ApiResponse<NotificationResponse>> markAsRead(
+    public ResponseEntity<ApiResponse<NotificationResponse>> markAsReadPatch(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.ok(notificationService.markAsRead(id, principal.getId())));
+    }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<ApiResponse<NotificationResponse>> markAsReadPut(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(ApiResponse.ok(notificationService.markAsRead(id, principal.getId())));
     }
 
     @PatchMapping("/read-all")
-    public ResponseEntity<ApiResponse<Void>> markAllAsRead(
+    public ResponseEntity<ApiResponse<Void>> markAllAsReadPatch(
             @AuthenticationPrincipal UserPrincipal principal) {
         notificationService.markAllAsRead(principal.getId());
         return ResponseEntity.ok(ApiResponse.ok("All notifications marked as read.", null));
+    }
+
+    @PutMapping("/read-all")
+    public ResponseEntity<ApiResponse<Void>> markAllAsReadPut(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        notificationService.markAllAsRead(principal.getId());
+        return ResponseEntity.ok(ApiResponse.ok("All notifications marked as read.", null));
+    }
+
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamNotifications(@AuthenticationPrincipal UserPrincipal principal) {
+        return notificationService.subscribe(principal.getId());
     }
 }

@@ -1,11 +1,13 @@
 com\spilltea\dto\bookmark\CollectionRequest.class
 com\spilltea\dto\letter\LetterRequest.class
+com\spilltea\dto\upload\UploadResponse.class
 com\spilltea\entity\enums\CommentStatus.class
 com\spilltea\dto\profile\UserProfileResponse$ProfileStats.class
 com\spilltea\exception\GlobalExceptionHandler.class
 com\spilltea\entity\Collection.class
 com\spilltea\dto\moderation\ModerationActionRequest.class
 com\spilltea\entity\enums\ReportStatus.class
+com\spilltea\repository\LetterReactionRepository.class
 com\spilltea\repository\UserRepository.class
 com\spilltea\dto\comment\CommentRequest.class
 com\spilltea\entity\CommentLike.class
@@ -20,6 +22,7 @@ com\spilltea\repository\LetterRepository.class
 com\spilltea\controller\NotificationController.class
 com\spilltea\service\BookmarkService.class
 com\spilltea\dto\moodboard\SaveMoodboardRequest.class
+com\spilltea\entity\UploadedImage.class
 com\spilltea\controller\BookmarkController.class
 com\spilltea\entity\Reaction.class
 com\spilltea\service\StoryService$1.class
@@ -37,6 +40,8 @@ com\spilltea\controller\StoryController.class
 com\spilltea\service\AuthService.class
 com\spilltea\repository\BookmarkRepository.class
 com\spilltea\service\LetterService.class
+com\spilltea\controller\UploadController.class
+com\spilltea\repository\LetterReplyRepository.class
 com\spilltea\exception\ResourceNotFoundException.class
 com\spilltea\dto\auth\RegisterRequest.class
 com\spilltea\dto\auth\LoginRequest.class
@@ -49,6 +54,7 @@ com\spilltea\dto\profile\UserProfileResponse$ReflectionItem.class
 com\spilltea\dto\profile\UpdateProfileRequest.class
 com\spilltea\repository\ReactionRepository.class
 com\spilltea\SpillTeaApplication.class
+com\spilltea\entity\LetterReaction.class
 com\spilltea\entity\Notification.class
 com\spilltea\repository\CollectionRepository.class
 com\spilltea\service\NotificationService.class
@@ -65,9 +71,11 @@ com\spilltea\dto\profile\UserProfileResponse.class
 com\spilltea\dto\bookmark\CollectionResponse.class
 com\spilltea\controller\ProfileController.class
 com\spilltea\entity\Letter.class
+com\spilltea\entity\LetterReply.class
 com\spilltea\entity\Comment.class
 com\spilltea\dto\profile\UserProfileResponse$QuoteItem.class
 com\spilltea\entity\BlockedUser.class
+com\spilltea\repository\UploadedImageRepository.class
 com\spilltea\dto\moderation\ReportResponse.class
 com\spilltea\entity\User.class
 com\spilltea\security\JwtAuthenticationFilter.class

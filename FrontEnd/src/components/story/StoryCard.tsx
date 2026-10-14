@@ -34,13 +34,18 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         featured ? 'p-6 sm:p-8 border-[#D8A0A5]/60 bg-gradient-to-b from-[#FFFCF8] to-[#FFF8F0]' : 'p-5 sm:p-6'
       }`}
     >
-      {/* Decorative Washi Tape on top */}
-      <div className="absolute -top-1 left-8 sm:left-12 pointer-events-none z-10">
+      {/* Decorative Washi Tape on top with subtle hover interaction */}
+      <div className="absolute -top-1 left-8 sm:left-12 pointer-events-none z-10 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105">
         <WashiTapeStrip
           color={featured ? '#F7DDE1' : '#E9D9C9'}
           width="w-20 sm:w-28"
           rotation={featured ? '-rotate-2' : 'rotate-1'}
         />
+      </div>
+
+      {/* Subtle doodle heart accent appearing on hover */}
+      <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-40 transition-opacity duration-300 pointer-events-none hidden sm:block">
+        <Heart className="w-3.5 h-3.5 text-[#D8A0A5] fill-[#D8A0A5]" />
       </div>
 
       {/* Header Info */}
@@ -159,14 +164,14 @@ export const StoryCard: React.FC<StoryCardProps> = ({
               e.stopPropagation();
               onReaction(story.id, 'hearYou');
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all cursor-pointer ${
               hasReacted
-                ? 'bg-[#F7DDE1] text-[#B98289] font-medium'
+                ? 'bg-[#F7DDE1] text-[#B98289] font-medium shadow-2xs'
                 : 'bg-[#FFF8F0] hover:bg-[#F7DDE1]/40 text-[#666747] border border-[#E9D9C9]'
             }`}
             title="Send supportive whisper: I hear you"
           >
-            <Heart className={`w-3.5 h-3.5 ${hasReacted ? 'fill-[#B98289]' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${hasReacted ? 'fill-[#B98289] animate-reaction-pop' : ''}`} />
             <span>{totalReactions} whispered</span>
           </button>
 

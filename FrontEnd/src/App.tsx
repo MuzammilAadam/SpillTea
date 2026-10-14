@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Story, UnsentLetter, UserProfile, NotificationItem } from './types';
 import {
   INITIAL_STORIES,
@@ -20,6 +20,8 @@ import { UnsentLettersView } from './components/letters/UnsentLettersView';
 import { ProfileView } from './components/profile/ProfileView';
 import { SavedView } from './components/saved/SavedView';
 import { MySpaceView } from './components/myspace/MySpaceView';
+import { NotificationsView } from './components/notifications/NotificationsView';
+import { FloatingDoodles } from './components/common/FloatingDoodles';
 
 // Modals & Drawers
 import { StoryDetailModal } from './components/story/StoryDetailModal';
@@ -27,6 +29,7 @@ import { SupportModal } from './components/common/SupportModal';
 import { NotificationsDrawer } from './components/notifications/NotificationsDrawer';
 import { Toast } from './components/common/Toast';
 import { AuthModal } from './components/auth/AuthModal';
+import { LoginRequiredModal } from './components/auth/LoginRequiredModal';
 
 // Auth & API
 import { useAuth } from './context/AuthContext';
@@ -34,9 +37,10 @@ import { storiesApi } from './api/stories';
 import { lettersApi } from './api/letters';
 import { profileApi } from './api/profile';
 import { notificationsApi } from './api/notifications';
+import { useNotificationStream } from './hooks/useNotificationStream';
 
 export function App() {
-  const { currentUser, isAuthenticated, logout, updateCurrentUserState } = useAuth();
+  const { currentUser, isAuthenticated, logout, updateCurrentUserState, token } = useAuth();
 
   // Navigation View State
   const [currentView, setCurrentView] = useState<string>('home');
@@ -58,10 +62,19 @@ export function App() {
 
   // Active Modals & Overlays
   const [activeStoryModal, setActiveStoryModal] = useState<Story | null>(null);
+  const [highlightCommentId, setHighlightCommentId] = useState<string | undefined>(undefined);
+  const [activeLetterId, setActiveLetterId] = useState<string | null>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Auth-guard modal state
+  const [loginRequiredOpen, setLoginRequiredOpen] = useState(false);
+  const [loginRequiredMessage, setLoginRequiredMessage] = useState<string>('Sign in to join gentle conversations.');
+  const [pendingDestination, setPendingDestination] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Save stories to local storage
   const updateStories = (newStories: Story[]) => {
@@ -80,6 +93,50 @@ export function App() {
       setToastMessage((curr) => (curr === msg ? null : curr));
     }, 3500);
   };
+
+  const requireAuth = (action?: () => void, message?: string, destination?: string) => {
+    if (!isAuthenticated) {
+      setLoginRequiredMessage(message || 'Sign in to join this gentle sanctuary.');
+      if (action) setPendingAction(() => action);
+      if (destination) setPendingDestination(destination);
+      setLoginRequiredOpen(true);
+      return false;
+    }
+    if (action) action();
+    return true;
+  };
+
+  const handleAuthSuccess = () => {
+    showToast('Welcome to your journal sanctuary.');
+    if (pendingDestination) {
+      const dest = pendingDestination;
+      setPendingDestination(null);
+      setCurrentView(dest);
+    }
+    if (pendingAction) {
+      const act = pendingAction;
+      setPendingAction(null);
+      act();
+    }
+  };
+
+  // ── Real-time SSE Notifications ────────────────────────────────────────────
+
+  const handleNewNotification = useCallback((notif: NotificationItem) => {
+    setNotifications((prev) => {
+      // Avoid duplicates
+      if (prev.some((n) => n.id === notif.id)) return prev;
+      return [notif, ...prev];
+    });
+    // Show a brief toast for incoming notification
+    showToast(`✦ ${notif.title}: ${notif.description}`);
+  }, []);
+
+  useNotificationStream({
+    token,
+    isAuthenticated,
+    onNewNotification: handleNewNotification,
+  });
 
   // Sync initial feed from Backend API
   useEffect(() => {
@@ -129,6 +186,8 @@ export function App() {
 
   // Toggle bookmark/save
   const handleToggleSave = async (storyId: string) => {
+    if (!requireAuth(() => {}, 'Sign in to save stories to your private keepsakes chest.')) return;
+
     const updated = stories.map((s) => {
       if (s.id === storyId) {
         const nextSaved = !s.saved;
@@ -142,12 +201,10 @@ export function App() {
       setActiveStoryModal((prev) => (prev ? { ...prev, saved: !prev.saved } : null));
     }
 
-    if (isAuthenticated) {
-      try {
-        await storiesApi.bookmarkStory(storyId);
-      } catch (err) {
-        console.warn('Failed to sync bookmark to server:', err);
-      }
+    try {
+      await storiesApi.bookmarkStory(storyId);
+    } catch (err) {
+      console.warn('Failed to sync bookmark to server:', err);
     }
   };
 
@@ -156,6 +213,8 @@ export function App() {
     storyId: string,
     reactionType: 'hearYou' | 'feltThisToo' | 'thankYou' | 'sendingSupport'
   ) => {
+    if (!requireAuth(() => {}, 'Sign in to send a gentle whisper of support to the author.')) return;
+
     const updated = stories.map((s) => {
       if (s.id === storyId) {
         const userReactions = s.userReactions || [];
@@ -190,17 +249,17 @@ export function App() {
       if (current) setActiveStoryModal(current);
     }
 
-    if (isAuthenticated) {
-      try {
-        await storiesApi.toggleReaction(storyId, reactionType);
-      } catch (err) {
-        console.warn('Failed to sync reaction to server:', err);
-      }
+    try {
+      await storiesApi.toggleReaction(storyId, reactionType);
+    } catch (err) {
+      console.warn('Failed to sync reaction to server:', err);
     }
   };
 
   // Add Comment / Reply
   const handleAddComment = async (storyId: string, content: string, parentCommentId?: string) => {
+    if (!requireAuth(() => {}, 'Sign in to share your heartfelt response with the author.')) return;
+
     const newCommentId = `comment-${Date.now()}`;
     const newComment = {
       id: newCommentId,
@@ -245,17 +304,17 @@ export function App() {
     if (updatedActive) setActiveStoryModal(updatedActive);
     showToast('Your heartfelt whisper has been penciled onto the page.');
 
-    if (isAuthenticated) {
-      try {
-        await storiesApi.addComment(storyId, content, parentCommentId);
-      } catch (err) {
-        console.warn('Failed to post comment to server:', err);
-      }
+    try {
+      await storiesApi.addComment(storyId, content, parentCommentId);
+    } catch (err) {
+      console.warn('Failed to post comment to server:', err);
     }
   };
 
   // Like comment
   const handleLikeComment = async (storyId: string, commentId: string) => {
+    if (!requireAuth(() => {}, 'Sign in to appreciate a fellow soul\'s words.')) return;
+
     const updated = stories.map((s) => {
       if (s.id === storyId && s.comments) {
         const comments = s.comments.map((c) => {
@@ -276,12 +335,10 @@ export function App() {
     const updatedActive = updated.find((s) => s.id === storyId);
     if (updatedActive) setActiveStoryModal(updatedActive);
 
-    if (isAuthenticated) {
-      try {
-        await storiesApi.toggleCommentLike(commentId);
-      } catch (err) {
-        console.warn('Failed to sync comment like:', err);
-      }
+    try {
+      await storiesApi.toggleCommentLike(commentId);
+    } catch (err) {
+      console.warn('Failed to sync comment like:', err);
     }
   };
 
@@ -310,29 +367,32 @@ export function App() {
 
   // Publish new story
   const handlePublishStory = async (storyData: any) => {
-    let createdStory: Story;
+    if (!isAuthenticated) {
+      // Preserve draft in localStorage so visitor never loses their words
+      localStorage.setItem('spilltea_draft', JSON.stringify({
+        title: storyData.title,
+        content: storyData.content,
+        category: storyData.category,
+        mood: storyData.mood,
+        intent: storyData.intent,
+        isPrivate: storyData.isPrivate,
+      }));
+      setPendingDestination('write');
+      setPendingAction(null); // Never silently publish without explicit user click
+      setLoginRequiredMessage('Sign in to share your story. Your words are waiting safely on your desk.');
+      setLoginRequiredOpen(true);
+      return;
+    }
 
-    if (isAuthenticated) {
-      try {
-        const res = await storiesApi.createStory({
-          ...storyData,
-          displayMode: storyData.isAnonymous ? 'ANONYMOUS' : 'PSEUDONYM',
-        });
-        createdStory = res;
-      } catch (err) {
-        console.warn('Server publish failed, saving locally:', err);
-        createdStory = {
-          ...storyData,
-          id: `story-${Date.now()}`,
-          reactions: { hearYou: 1, feltThisToo: 0, thankYou: 0, sendingSupport: 1 },
-          userReactions: ['hearYou'],
-          commentsCount: 0,
-          saved: false,
-          comments: [],
-          isAuthor: true,
-        };
-      }
-    } else {
+    let createdStory: Story;
+    try {
+      const res = await storiesApi.createStory({
+        ...storyData,
+        displayMode: storyData.isAnonymous ? 'ANONYMOUS' : 'PSEUDONYM',
+      });
+      createdStory = res;
+    } catch (err) {
+      console.warn('Server publish failed, saving locally:', err);
       createdStory = {
         ...storyData,
         id: `story-${Date.now()}`,
@@ -361,23 +421,30 @@ export function App() {
 
   // Publish / Pencil unsent letter
   const handlePublishLetter = async (letterData: any) => {
-    let createdLetter: UnsentLetter;
+    if (!isAuthenticated) {
+      // Preserve letter draft
+      localStorage.setItem('spilltea_draft', JSON.stringify({
+        title: letterData.title,
+        content: letterData.content,
+        recipient: letterData.recipient,
+        category: letterData.category,
+        isPrivate: letterData.isPrivate,
+      }));
+      setPendingDestination('write');
+      setPendingAction(null);
+      setLoginRequiredMessage('Sign in to release your unsent letter into the ether.');
+      setLoginRequiredOpen(true);
+      return;
+    }
 
-    if (isAuthenticated) {
-      try {
-        const res = await lettersApi.createLetter({
-          ...letterData,
-        });
-        createdLetter = res;
-      } catch (err) {
-        console.warn('Server letter post failed, saving locally:', err);
-        createdLetter = {
-          ...letterData,
-          id: `letter-${Date.now()}`,
-          date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        };
-      }
-    } else {
+    let createdLetter: UnsentLetter;
+    try {
+      const res = await lettersApi.createLetter({
+        ...letterData,
+      });
+      createdLetter = res;
+    } catch (err) {
+      console.warn('Server letter post failed, saving locally:', err);
       createdLetter = {
         ...letterData,
         id: `letter-${Date.now()}`,
@@ -413,6 +480,28 @@ export function App() {
       } catch (err) {
         console.warn('Failed to delete letter from server:', err);
       }
+    }
+  };
+
+  // Letter reaction handler
+  const handleReactLetter = async (letterId: string, type: string) => {
+    if (!requireAuth(() => {}, 'Sign in to whisper support to this unsent letter.')) return;
+    try {
+      await lettersApi.toggleReaction(letterId, type);
+      showToast('You felt this too — whispered softly to the author.');
+    } catch (err) {
+      console.warn('Failed to react to letter on server:', err);
+    }
+  };
+
+  // Letter thoughtful reply handler
+  const handleReplyLetter = async (letterId: string, content: string) => {
+    if (!requireAuth(() => {}, 'Sign in to leave a thoughtful response to this letter.')) return;
+    try {
+      await lettersApi.addReply(letterId, content);
+      showToast('Your thoughtful response has been gently delivered.');
+    } catch (err) {
+      console.warn('Failed to reply to letter on server:', err);
     }
   };
 
@@ -452,18 +541,33 @@ export function App() {
       prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
     );
     setIsNotificationsOpen(false);
-    if (notif.storyId) {
-      const found = stories.find((s) => s.id === notif.storyId);
-      if (found) {
-        setActiveStoryModal(found);
-      }
-    }
+
     if (isAuthenticated) {
       try {
         await notificationsApi.markAsRead(notif.id);
       } catch (err) {
         console.warn('Could not mark notification read on server:', err);
       }
+    }
+
+    if (notif.storyId) {
+      let story = stories.find((s) => s.id === notif.storyId);
+      if (!story && isAuthenticated) {
+        try {
+          story = await storiesApi.getStory(notif.storyId);
+        } catch (err) {
+          console.warn('Could not find story:', err);
+        }
+      }
+      if (story) {
+        setHighlightCommentId(notif.commentId);
+        setActiveStoryModal(story);
+      } else {
+        showToast('Story may have been gently tucked away or deleted.');
+      }
+    } else if (notif.letterId) {
+      setActiveLetterId(notif.letterId);
+      setCurrentView('unsent-letters');
     }
   };
 
@@ -479,6 +583,25 @@ export function App() {
     }
   };
 
+  const handleMarkNotificationAsRead = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    if (isAuthenticated) {
+      try {
+        await notificationsApi.markAsRead(id);
+      } catch (err) {
+        console.warn('Could not mark notification read on server:', err);
+      }
+    }
+  };
+
+  const handleNavbarNavigate = (view: string) => {
+    if (view === 'myspace' && !isAuthenticated) {
+      requireAuth(() => setCurrentView('myspace'), 'Sign in to open your personal cedar drawer.', 'myspace');
+      return;
+    }
+    setCurrentView(view);
+  };
+
   const savedCount = stories.filter((s) => s.saved).length;
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
@@ -489,20 +612,24 @@ export function App() {
         onOpenSupport={() => setIsSupportModalOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={unreadNotificationsCount}
-        onNavigate={(v) => setCurrentView(v)}
+        onNavigate={handleNavbarNavigate}
         currentUser={currentUser}
-        onOpenSearch={() => {
-          setCurrentView('explore');
+        onOpenSearch={() => setCurrentView('explore')}
+        onOpenAuth={() => {
+          setAuthModalMode('login');
+          setIsAuthModalOpen(true);
         }}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
         isAuthenticated={isAuthenticated}
         onLogout={logout}
+        notifications={notifications}
+        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        onNotificationClick={handleNotificationClick}
       />
 
       {/* 2. Sage-Green Main Navbar (Reference A) */}
       <Navbar
         currentView={currentView}
-        onNavigate={(v) => setCurrentView(v)}
+        onNavigate={handleNavbarNavigate}
         savedCount={savedCount}
       />
 
@@ -552,6 +679,9 @@ export function App() {
             onOpenLetter={(l) => {}}
             onNewLetter={() => setCurrentView('write')}
             onDeleteLetter={handleDeleteLetter}
+            onReactLetter={handleReactLetter}
+            onReplyLetter={handleReplyLetter}
+            initialLetterId={activeLetterId}
           />
         )}
 
@@ -587,24 +717,38 @@ export function App() {
             onResetSession={handleResetSession}
           />
         )}
+
+        {currentView === 'notifications' && (
+          <NotificationsView
+            notifications={notifications}
+            onNotificationClick={handleNotificationClick}
+            onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+            onMarkAsRead={handleMarkNotificationAsRead}
+            onBack={() => setCurrentView('home')}
+          />
+        )}
       </div>
 
       {/* 4. Scrapbook Footer */}
       <Footer
-        onNavigate={(v) => setCurrentView(v)}
+        onNavigate={handleNavbarNavigate}
         onOpenSupport={() => setIsSupportModalOpen(true)}
       />
 
       {/* 5. Modals & Notifications Drawer */}
       <StoryDetailModal
         story={activeStoryModal}
-        onClose={() => setActiveStoryModal(null)}
+        onClose={() => {
+          setActiveStoryModal(null);
+          setHighlightCommentId(undefined);
+        }}
         onToggleSave={handleToggleSave}
         onReaction={handleReaction}
         onAddComment={handleAddComment}
         onLikeComment={handleLikeComment}
         onPinComment={handlePinComment}
         onReportStory={handleReportStory}
+        highlightCommentId={highlightCommentId}
       />
 
       <SupportModal
@@ -623,7 +767,25 @@ export function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={() => showToast('Welcome to your journal sanctuary.')}
+        onSuccess={handleAuthSuccess}
+        initialMode={authModalMode}
+      />
+
+      {/* Auth Guard Modal */}
+      <LoginRequiredModal
+        isOpen={loginRequiredOpen}
+        onClose={() => setLoginRequiredOpen(false)}
+        onLoginClick={() => {
+          setLoginRequiredOpen(false);
+          setAuthModalMode('login');
+          setIsAuthModalOpen(true);
+        }}
+        onRegisterClick={() => {
+          setLoginRequiredOpen(false);
+          setAuthModalMode('register');
+          setIsAuthModalOpen(true);
+        }}
+        actionMessage={loginRequiredMessage}
       />
 
       {/* Gentle feedback toast */}
