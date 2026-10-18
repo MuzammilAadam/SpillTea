@@ -2,11 +2,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { authApi, AuthResponseData } from '../api/auth';
 import { profileApi } from '../api/profile';
 import { UserProfile } from '../types';
-import { CURRENT_USER } from '../data/mockData';
 
 interface AuthContextType {
   token: string | null;
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (login: string, pass: string) => Promise<void>;
@@ -20,9 +19,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('spilltea_token'));
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('spilltea_user');
-    return saved ? JSON.parse(saved) : CURRENT_USER;
+    return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -38,7 +37,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('spilltea_user', JSON.stringify(profile));
       }
     } catch (err) {
-      console.warn('Failed to fetch user profile, using stored session:', err);
+      // A stale/expired token must not leave an apparently authenticated user.
+      localStorage.removeItem('spilltea_token');
+      localStorage.removeItem('spilltea_user');
+      setToken(null);
+      setCurrentUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -53,10 +56,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('spilltea_token', data.token);
 
     const updatedUser: UserProfile = {
-      ...currentUser,
+      ...(currentUser || {} as UserProfile),
       pseudonym: data.pseudonym,
       displayName: data.displayName || data.pseudonym,
-      avatar: data.avatar || currentUser.avatar,
+      avatar: data.avatar || currentUser?.avatar || '',
     };
     setCurrentUser(updatedUser);
     localStorage.setItem('spilltea_user', JSON.stringify(updatedUser));
@@ -79,11 +82,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setToken(null);
+    setCurrentUser(null);
     localStorage.removeItem('spilltea_token');
+    localStorage.removeItem('spilltea_user');
+    localStorage.removeItem('spilltea_stories');
+    localStorage.removeItem('spilltea_letters');
+    localStorage.removeItem('spilltea_draft');
   };
 
   const updateCurrentUserState = (updated: Partial<UserProfile>) => {
     setCurrentUser(prev => {
+      if (!prev) return prev;
       const next = { ...prev, ...updated };
       localStorage.setItem('spilltea_user', JSON.stringify(next));
       return next;

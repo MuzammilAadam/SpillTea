@@ -41,7 +41,7 @@ export const storiesApi = {
     api.put<Story>(`/stories/${storyId}/reactions/${reactionType}`),
 
   bookmarkStory: (storyId: string | number) =>
-    api.post<{ saved: boolean }>(`/stories/${storyId}/bookmark`),
+    api.put<{ saved: boolean }>(`/stories/${storyId}/bookmark`),
 
   getComments: (storyId: string | number) =>
     api.get<Comment[]>(`/stories/${storyId}/comments`),
@@ -54,6 +54,14 @@ export const storiesApi = {
 
   toggleCommentLike: (commentId: string | number) =>
     api.post<number>(`/comments/${commentId}/like`),
+
+  pinComment: (storyId: string | number, commentId: string | number) =>
+    api.post<Comment>(`/stories/${storyId}/comments/${commentId}/pin`),
+
+  reportStory: (storyId: string | number, reason: string) =>
+    api.post('/reports', { storyId: Number(storyId), reason }),
+
+  getBookmarks: () => api.get<Story[]>('/me/bookmarks'),
 
   deleteComment: (commentId: string | number) =>
     api.delete<void>(`/comments/${commentId}`),

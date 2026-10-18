@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Story, UnsentLetter, UserProfile, NotificationItem } from './types';
-import {
-  INITIAL_STORIES,
-  INITIAL_LETTERS,
-  CURRENT_USER,
-  INITIAL_NOTIFICATIONS,
-} from './data/mockData';
 
 // Layout
 import { AnnouncementHeader } from './components/layout/AnnouncementHeader';
@@ -50,9 +44,9 @@ export function App() {
   const [routeProfileLoading, setRouteProfileLoading] = useState(false);
   const [routeProfileError, setRouteProfileError] = useState(false);
 
-  const openProfile = useCallback(async (pseudonym: string) => {
+  const openProfile = useCallback(async (pseudonym: string, addHistory = true) => {
     const encoded = encodeURIComponent(pseudonym);
-    window.history.pushState({}, '', `/profile/${encoded}`);
+    if (addHistory) window.history.pushState({}, '', `/profile/${encoded}`);
     setCurrentView('profile-public'); setRouteProfileLoading(true); setRouteProfileError(false);
     try { setRouteProfile(await profileApi.getProfile(pseudonym)); }
     catch { setRouteProfile(null); setRouteProfileError(true); }
@@ -62,9 +56,13 @@ export function App() {
   useEffect(() => {
     const resolvePath = () => {
       const match = window.location.pathname.match(/^\/profile\/([^/]+)$/);
-      if (!match) return;
+      if (!match) {
+        setCurrentView('home');
+        setRouteProfile(null);
+        return;
+      }
       const pseudonym = decodeURIComponent(match[1]);
-      openProfile(pseudonym);
+      openProfile(pseudonym, false);
     };
     window.addEventListener('popstate', resolvePath);
     resolvePath();
@@ -72,17 +70,13 @@ export function App() {
   }, [openProfile]);
 
   // Core Data States
-  const [stories, setStories] = useState<Story[]>(() => {
-    const saved = localStorage.getItem('spilltea_stories');
-    return saved ? JSON.parse(saved) : INITIAL_STORIES;
-  });
+  const [stories, setStories] = useState<Story[]>([]);
 
-  const [letters, setLetters] = useState<UnsentLetter[]>(() => {
-    const saved = localStorage.getItem('spilltea_letters');
-    return saved ? JSON.parse(saved) : INITIAL_LETTERS;
-  });
+  const [letters, setLetters] = useState<UnsentLetter[]>([]);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [feedError, setFeedError] = useState<string | null>(null);
 
   // Active Modals & Overlays
   const [activeStoryModal, setActiveStoryModal] = useState<Story | null>(null);
@@ -103,12 +97,10 @@ export function App() {
   // Save stories to local storage
   const updateStories = (newStories: Story[]) => {
     setStories(newStories);
-    localStorage.setItem('spilltea_stories', JSON.stringify(newStories));
   };
 
   const updateLetters = (newLetters: UnsentLetter[]) => {
     setLetters(newLetters);
-    localStorage.setItem('spilltea_letters', JSON.stringify(newLetters));
   };
 
   const showToast = (msg: string) => {
@@ -152,6 +144,7 @@ export function App() {
       if (prev.some((n) => n.id === notif.id)) return prev;
       return [notif, ...prev];
     });
+    setUnreadCount((count) => count + (notif.read ? 0 : 1));
     // Show a brief toast for incoming notification
     showToast(`✦ ${notif.title}: ${notif.description}`);
   }, []);
@@ -160,6 +153,7 @@ export function App() {
     token,
     isAuthenticated,
     onNewNotification: handleNewNotification,
+    onUnreadCountUpdate: setUnreadCount,
   });
 
   // Sync initial feed from Backend API
@@ -171,35 +165,41 @@ export function App() {
         if (mounted && feed && feed.content) {
           // The backend is authoritative: an empty feed is a real empty feed.
           setStories(feed.content);
-          localStorage.setItem('spilltea_stories', JSON.stringify(feed.content));
+          setStories(feed.content);
         }
       } catch (err) {
-        console.warn('Backend offline or unreachable, using local journal data:', err);
+        console.warn('Could not load stories:', err);
+        if (mounted) setFeedError('Stories could not be loaded. Please retry.');
       }
 
       try {
         const letterFeed = await lettersApi.getPublicLetters();
-        if (mounted && letterFeed && letterFeed.content && letterFeed.content.length > 0) {
-          const remoteIds = new Set(letterFeed.content.map(l => String(l.id)));
-          const remainingLocal = letters.filter(l => !remoteIds.has(String(l.id)));
-          setLetters([...letterFeed.content, ...remainingLocal]);
+        if (mounted && letterFeed && letterFeed.content) {
+          setLetters(letterFeed.content);
         }
       } catch (err) {
-        console.warn('Backend offline or unreachable, using local letters:', err);
+        console.warn('Could not load letters:', err);
+        if (mounted) setFeedError('Letters could not be loaded. Please retry.');
       }
 
       if (isAuthenticated) {
         try {
           const remoteNotifs = await notificationsApi.getNotifications();
-          if (mounted && remoteNotifs && remoteNotifs.length > 0) {
+          if (mounted && remoteNotifs) {
             setNotifications(remoteNotifs);
+            const count = await notificationsApi.getUnreadCount();
+            if (mounted) setUnreadCount(count);
           }
         } catch (err) {
           console.warn('Could not load remote notifications:', err);
+          if (mounted) { setNotifications([]); setUnreadCount(0); }
         }
       }
     };
 
+    if (!isAuthenticated) {
+      setStories([]); setLetters([]); setNotifications([]); setUnreadCount(0);
+    }
     fetchRemoteData();
     return () => { mounted = false; };
   }, [isAuthenticated]);
@@ -218,6 +218,7 @@ export function App() {
       }
       return s;
     });
+    const previous = stories;
     updateStories(updated);
     if (activeStoryModal && activeStoryModal.id === storyId) {
       setActiveStoryModal((prev) => (prev ? { ...prev, saved: !prev.saved } : null));
@@ -226,7 +227,9 @@ export function App() {
     try {
       await storiesApi.bookmarkStory(storyId);
     } catch (err) {
-      console.warn('Failed to sync bookmark to server:', err);
+      updateStories(previous);
+      if (activeStoryModal?.id === storyId) setActiveStoryModal(previous.find(s => s.id === storyId) || null);
+      showToast('Could not save that bookmark. Please try again.');
     }
   };
 
@@ -236,6 +239,8 @@ export function App() {
     reactionType: 'hearYou' | 'feltThisToo' | 'thankYou' | 'sendingSupport'
   ) => {
     if (!requireAuth(() => {}, 'Sign in to send a gentle whisper of support to the author.')) return;
+
+    const previous = stories;
 
     const updated = stories.map((s) => {
       if (s.id === storyId) {
@@ -274,13 +279,16 @@ export function App() {
     try {
       await storiesApi.toggleReaction(storyId, reactionType);
     } catch (err) {
-      console.warn('Failed to sync reaction to server:', err);
+      updateStories(previous);
+      if (activeStoryModal?.id === storyId) setActiveStoryModal(previous.find(s => s.id === storyId) || null);
+      showToast('Could not save that reaction. Please try again.');
     }
   };
 
   // Add Comment / Reply
   const handleAddComment = async (storyId: string, content: string, parentCommentId?: string) => {
     if (!requireAuth(() => {}, 'Sign in to share your heartfelt response with the author.')) return;
+    if (!currentUser) return;
 
     const newCommentId = `comment-${Date.now()}`;
     const newComment = {
@@ -321,7 +329,7 @@ export function App() {
       return s;
     });
 
-    updateStories(updated);
+    const previous = stories;
     const updatedActive = updated.find((s) => s.id === storyId);
     if (updatedActive) setActiveStoryModal(updatedActive);
     showToast('Your heartfelt whisper has been penciled onto the page.');
@@ -329,7 +337,9 @@ export function App() {
     try {
       await storiesApi.addComment(storyId, content, parentCommentId);
     } catch (err) {
-      console.warn('Failed to post comment to server:', err);
+      updateStories(previous);
+      setActiveStoryModal(previous.find(s => s.id === storyId) || null);
+      showToast('Could not save your comment. Please try again.');
     }
   };
 
@@ -353,19 +363,23 @@ export function App() {
       }
       return s;
     });
-    updateStories(updated);
+    const previous = stories;
     const updatedActive = updated.find((s) => s.id === storyId);
     if (updatedActive) setActiveStoryModal(updatedActive);
 
     try {
       await storiesApi.toggleCommentLike(commentId);
     } catch (err) {
-      console.warn('Failed to sync comment like:', err);
+      updateStories(previous);
+      setActiveStoryModal(previous.find(s => s.id === storyId) || null);
+      showToast('Could not save that appreciation. Please try again.');
     }
   };
 
   // Pin comment (Author action)
-  const handlePinComment = (storyId: string, commentId: string) => {
+  const handlePinComment = async (storyId: string, commentId: string) => {
+    if (!isAuthenticated) return;
+    const previous = stories;
     const updated = stories.map((s) => {
       if (s.id === storyId && s.comments) {
         const comments = s.comments.map((c) => ({
@@ -379,12 +393,23 @@ export function App() {
     updateStories(updated);
     const updatedActive = updated.find((s) => s.id === storyId);
     if (updatedActive) setActiveStoryModal(updatedActive);
-    showToast('Reply pinned for its gentle solace.');
+    try {
+      await storiesApi.pinComment(storyId, commentId);
+      showToast('Reply pinned for its gentle solace.');
+    } catch {
+      updateStories(previous);
+      setActiveStoryModal(previous.find(s => s.id === storyId) || null);
+      showToast('Could not pin that reply.');
+    }
   };
 
   // Report story
-  const handleReportStory = (storyId: string, reason: string) => {
-    showToast(`Thank you for keeping this space safe. We've received your note on: "${reason}".`);
+  const handleReportStory = async (storyId: string, reason: string) => {
+    if (!isAuthenticated) { requireAuth(undefined, 'Sign in to report content safely.'); return; }
+    try {
+      await storiesApi.reportStory(storyId, reason);
+      showToast(`Thank you for keeping this space safe. We've received your note.`);
+    } catch (err: any) { showToast(err?.message || 'Could not submit the report. Please try again.'); }
   };
 
   // Publish new story
@@ -405,6 +430,7 @@ export function App() {
       setLoginRequiredOpen(true);
       return;
     }
+    if (!currentUser) return;
 
     let createdStory: Story;
     try {
@@ -413,18 +439,9 @@ export function App() {
         displayMode: storyData.isAnonymous ? 'ANONYMOUS' : 'PSEUDONYM',
       });
       createdStory = res;
-    } catch (err) {
-      console.warn('Server publish failed, saving locally:', err);
-      createdStory = {
-        ...storyData,
-        id: `story-${Date.now()}`,
-        reactions: { hearYou: 1, feltThisToo: 0, thankYou: 0, sendingSupport: 1 },
-        userReactions: ['hearYou'],
-        commentsCount: 0,
-        saved: false,
-        comments: [],
-        isAuthor: true,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Could not publish your story. Please try again.');
+      return;
     }
 
     const newStories = [createdStory, ...stories];
@@ -458,6 +475,7 @@ export function App() {
       setLoginRequiredOpen(true);
       return;
     }
+    if (!currentUser) return;
 
     let createdLetter: UnsentLetter;
     try {
@@ -465,13 +483,9 @@ export function App() {
         ...letterData,
       });
       createdLetter = res;
-    } catch (err) {
-      console.warn('Server letter post failed, saving locally:', err);
-      createdLetter = {
-        ...letterData,
-        id: `letter-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Could not release your letter. Please try again.');
+      return;
     }
 
     const newLetters = [createdLetter, ...letters];
@@ -546,24 +560,27 @@ export function App() {
     localStorage.removeItem('spilltea_letters');
     localStorage.removeItem('spilltea_user');
     localStorage.removeItem('spilltea_draft');
-    setStories(INITIAL_STORIES);
-    setLetters(INITIAL_LETTERS);
-    updateCurrentUserState(CURRENT_USER);
-    showToast('Session and temporary drafts restored to clean defaults.');
+    setStories([]);
+    setLetters([]);
+    showToast('Temporary local state cleared.');
   };
 
   // Notification click
   const handleNotificationClick = async (notif: NotificationItem) => {
+    const previousNotifications = notifications;
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
     );
+    setUnreadCount((count) => Math.max(0, count - (notif.read ? 0 : 1)));
     setIsNotificationsOpen(false);
 
     if (isAuthenticated) {
       try {
         await notificationsApi.markAsRead(notif.id);
       } catch (err) {
-        console.warn('Could not mark notification read on server:', err);
+        setNotifications(previousNotifications);
+        setUnreadCount(previousNotifications.filter(n => !n.read).length);
+        showToast('Could not update notification status.');
       }
     }
 
@@ -589,24 +606,32 @@ export function App() {
   };
 
   const handleMarkAllNotificationsAsRead = async () => {
+    const previousNotifications = notifications;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
     showToast('All notifications marked as read.');
     if (isAuthenticated) {
       try {
         await notificationsApi.markAllAsRead();
       } catch (err) {
-        console.warn('Could not mark all notifications read on server:', err);
+        setNotifications(previousNotifications);
+        setUnreadCount(previousNotifications.filter(n => !n.read).length);
+        showToast('Could not update notification status.');
       }
     }
   };
 
   const handleMarkNotificationAsRead = async (id: string) => {
+    const previousNotifications = notifications;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setUnreadCount((count) => Math.max(0, count - (previousNotifications.find(n => n.id === id)?.read ? 0 : 1)));
     if (isAuthenticated) {
       try {
         await notificationsApi.markAsRead(id);
       } catch (err) {
-        console.warn('Could not mark notification read on server:', err);
+        setNotifications(previousNotifications);
+        setUnreadCount(previousNotifications.filter(n => !n.read).length);
+        showToast('Could not update notification status.');
       }
     }
   };
@@ -617,10 +642,12 @@ export function App() {
       return;
     }
     setCurrentView(view);
+    const path = view === 'home' ? '/' : `/${view}`;
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
   };
 
   const savedCount = stories.filter((s) => s.saved).length;
-  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+  const unreadNotificationsCount = unreadCount;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFF8F0] text-[#44352F] paper-texture">
@@ -649,6 +676,12 @@ export function App() {
         onNavigate={handleNavbarNavigate}
         savedCount={savedCount}
       />
+
+      {feedError && (
+        <div className="mx-auto mt-3 rounded-full border border-[#D8A0A5] bg-[#FFF8F0] px-4 py-2 text-center text-sm text-[#A84855]">
+          {feedError} <button className="ml-2 underline" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
 
       {/* 3. Main Routed View Area */}
       <div className="flex-1">
@@ -707,7 +740,7 @@ export function App() {
           />
         )}
 
-        {currentView === 'profile' && (
+        {currentView === 'profile' && currentUser && (
           <ProfileView
             user={currentUser}
             stories={stories}
@@ -734,7 +767,7 @@ export function App() {
           />
         )}
 
-        {currentView === 'myspace' && (
+        {currentView === 'myspace' && currentUser && (
           <MySpaceView
             user={currentUser}
             stories={stories}

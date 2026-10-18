@@ -101,7 +101,8 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
   onRequireAuth,
 }) => {
   const { isAuthenticated } = useAuth();
-  const [cards, setCards] = useState<MoodboardItem[]>(initialCards && initialCards.length > 0 ? initialCards : DEFAULT_CARDS);
+  const [cards, setCards] = useState<MoodboardItem[]>(initialCards || []);
+  const [boardLoading, setBoardLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isPublished, setIsPublished] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -151,19 +152,21 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
       try {
         if (isOwner && isAuthenticated) {
           const res = await moodboardApi.getMyMoodboard();
-          if (mounted && res && res.cards && res.cards.length > 0) {
-            setCards(res.cards);
+          if (mounted && res) {
+            setCards(res.cards || []);
             setIsPublished(res.published);
           }
         } else if (pseudonym) {
           const res = await moodboardApi.getPublicMoodboard(pseudonym);
-          if (mounted && res && res.cards && res.cards.length > 0) {
-            setCards(res.cards);
+          if (mounted && res) {
+            setCards(res.cards || []);
             setIsPublished(res.published);
           }
         }
       } catch (err) {
-        console.warn('Using local moodboard items:', err);
+        console.warn('Could not load moodboard:', err);
+      } finally {
+        if (mounted) setBoardLoading(false);
       }
     };
     fetchBoard();
@@ -277,7 +280,6 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
           cards,
         });
       }
-      localStorage.setItem(`spilltea_moodboard_${pseudonym}`, JSON.stringify(cards));
       onToast('Moodboard draft safely saved in your desk drawer.');
     } catch (err: any) {
       onToast(err?.message || 'Failed to save draft.');
@@ -300,7 +302,6 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
       }
       setIsPublished(true);
       setIsEditing(false);
-      localStorage.setItem(`spilltea_moodboard_${pseudonym}`, JSON.stringify(cards));
       onToast('Your scrapbook moodboard has been published for gentle wandering souls!');
     } catch (err: any) {
       onToast(err?.message || 'Failed to publish moodboard.');
@@ -320,7 +321,7 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
       setIsEditing(false);
       onToast('Draft discarded. Restored to published version.');
     } catch (err: any) {
-      onToast('Restored previous layout.');
+      onToast('Could not restore the saved moodboard. Please try again.');
       setIsEditing(false);
     }
   };
@@ -542,6 +543,16 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
       </div>
 
       {/* Scrapbook Canvas: Masonry-style Grid */}
+      {boardLoading ? (
+        <div className="py-20 text-center font-serif text-[#666747]">Opening your scrapbook...</div>
+      ) : cards.length === 0 ? (
+        <div className="py-20 text-center bg-[#FFF8F0] rounded-3xl border border-dashed border-[#E9D9C9]">
+          <HardDrive className="w-10 h-10 mx-auto mb-3 text-[#B98289]/70" />
+          <h3 className="font-editorial text-2xl text-[#44352F]">A fresh scrapbook page</h3>
+          <p className="mt-2 text-sm text-[#666747]">Add a memory when you are ready.</p>
+          {isOwner && <button type="button" onClick={() => setIsEditing(true)} className="mt-5 px-5 py-2 rounded-full bg-[#B98289] text-white font-serif text-sm">Add Memory</button>}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
         {cards.map((card, index) => {
           const rotationClass = card.rotation || (index % 2 === 0 ? '-rotate-1' : 'rotate-1');
@@ -737,6 +748,7 @@ export const EditableMoodboard: React.FC<EditableMoodboardProps> = ({
           );
         })}
       </div>
+      )}
 
       {/* Card Edit / Create Modal */}
       {editingCard && (

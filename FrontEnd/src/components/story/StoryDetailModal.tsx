@@ -45,8 +45,6 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
   highlightCommentId,
   onOpenProfile,
 }) => {
-  if (!story) return null;
-
   const [newCommentText, setNewCommentText] = useState('');
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -66,6 +64,8 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
       return () => clearTimeout(timer);
     }
   }, [highlightCommentId, story]);
+
+  if (!story) return null;
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();

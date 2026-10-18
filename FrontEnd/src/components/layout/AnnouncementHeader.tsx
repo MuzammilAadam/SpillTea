@@ -8,7 +8,7 @@ interface AnnouncementHeaderProps {
   onOpenNotifications?: () => void;
   unreadNotificationsCount: number;
   onNavigate: (view: string) => void;
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   onOpenSearch: () => void;
   onOpenAuth?: () => void;
   isAuthenticated?: boolean;
@@ -134,12 +134,12 @@ export const AnnouncementHeader: React.FC<AnnouncementHeaderProps> = ({
                 title="Go to my profile & moodboard"
               >
                 <img
-                  src={currentUser.avatar}
-                  alt={currentUser.pseudonym}
+                  src={currentUser?.avatar || '/favicon.svg'}
+                  alt={currentUser?.pseudonym || 'Your profile'}
                   className="w-5 h-5 rounded-full object-cover border border-[#D8A0A5]"
                 />
                 <span className="text-[11px] font-medium text-[#44352F] hidden lg:inline">
-                  @{currentUser.pseudonym}
+                  @{currentUser?.pseudonym}
                 </span>
               </button>
               {onLogout && (

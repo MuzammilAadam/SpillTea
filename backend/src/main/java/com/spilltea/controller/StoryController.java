@@ -5,8 +5,10 @@ import com.spilltea.dto.comment.CommentResponse;
 import com.spilltea.dto.common.ApiResponse;
 import com.spilltea.dto.story.StoryRequest;
 import com.spilltea.dto.story.StoryResponse;
+import com.spilltea.dto.moderation.ReportRequest;
 import com.spilltea.security.UserPrincipal;
 import com.spilltea.service.StoryService;
+import com.spilltea.service.ModerationService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,9 +26,11 @@ import java.util.Map;
 public class StoryController {
 
     private final StoryService storyService;
+    private final ModerationService moderationService;
 
-    public StoryController(StoryService storyService) {
+    public StoryController(StoryService storyService, ModerationService moderationService) {
         this.storyService = storyService;
+        this.moderationService = moderationService;
     }
 
     // ── Public Story Feed ──────────────────────────────────────────────────────
@@ -190,7 +194,10 @@ public class StoryController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal principal) {
-        // Handled by ModerationController
+        ReportRequest request = new ReportRequest();
+        request.setStoryId(id);
+        request.setReason(body == null ? null : body.get("reason"));
+        moderationService.submitReport(request, principal.getId());
         return ResponseEntity.ok(ApiResponse.ok("Thank you for keeping this space safe.", null));
     }
 }

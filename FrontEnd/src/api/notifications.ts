@@ -8,15 +8,9 @@ export const notificationsApi = {
     api.get<NotificationItem[]>(`/me/notifications?page=${page}&size=${size}`),
 
   getUnreadCount: async (): Promise<number> => {
-    try {
-      const res = await api.get<{ count: number } | number>('/me/notifications/unread-count');
-      if (res && typeof res === 'object' && 'count' in res) {
-        return (res as { count: number }).count;
-      }
-      return typeof res === 'number' ? res : 0;
-    } catch {
-      return 0;
-    }
+    const res = await api.get<{ count: number } | number>('/me/notifications/unread-count');
+    if (res && typeof res === 'object' && 'count' in res) return (res as { count: number }).count;
+    return typeof res === 'number' ? res : 0;
   },
 
   markAsRead: (id: string | number) =>

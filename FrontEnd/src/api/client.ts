@@ -1,4 +1,9 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+export const resolveMediaUrl = (value?: string | null) => {
+  if (!value || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('http')) return value || '';
+  const origin = API_BASE_URL.replace(/\/api\/?$/, '');
+  return `${origin}${value.startsWith('/') ? value : `/${value}`}`;
+};
 
 export interface ApiResponse<T = any> {
   success: boolean;
