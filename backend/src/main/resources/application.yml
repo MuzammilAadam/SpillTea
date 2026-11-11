@@ -8,8 +8,8 @@ spring:
 
   datasource:
     url: "jdbc:mysql://localhost:3306/spilltea_db?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD}
+    username: root
+    password: "mysql@2005"
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -28,7 +28,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:SpillTeaSuperSecretKey2026SecureRandomKeyForJWT}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
   upload:
